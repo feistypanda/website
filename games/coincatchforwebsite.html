@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>My games</title>
+    </head>
+    <body>
+        <p align="center"> 
+            <canvas id="mycanvas"></canvas> 
+        </p>
+
+    </body>
+    <script src="/Users/leomilberg/Documents/ProcessingJS/lib/processing.js"></script> 
+ 
+ <script>    
+var sketchProc = function(processingInstance) {
+with (processingInstance) {
+size(800, 800); 
+frameRate(60);
+textAlign(CENTER, CENTER);
+ellipse(0, 0, 0, 0);
+
+/*
+ * 8 Bit Racing Game Score by JZY SFX
+ * Retrieved from https://audiosoundclips.com/chiptune-8-bit-volume-2-creative-commons-music-cc-3-0/
+ * Under CC Share Alike 3.0 https://creativecommons.org/licenses/by-sa/3.0/
+ */
+var audio1 = new Audio('/Users/leomilberg/Documents/ProcessingJS/projects/coin_catch/coin_kaching.m4a');
+var audio2 = new Audio("/Users/leomilberg/Documents/ProcessingJS/projects/coin_catch/dieSound.m4a");
+var audio3 = new Audio("/Users/leomilberg/Documents/ProcessingJS/projects/coin_catch/dieSound3.m4a");
+var audio = new Audio('/Users/leomilberg/Documents/ProcessingJS/projects/coin_catch/8-bit-racing-song2.m4a');
+audio.playbackRate = 1;
+var val;
+audio.addEventListener("loadedmetadata", function(){
+    val = audio.duration;
+    console.log(val);
+});
+var audios = [audio, audio1, audio2, audio3];
+var spriteDead = false;
+var norm;
+var groundHeight = height/5;
+var keyIsPressed = false;
+var score = 0;
+var topScore = 0;
+var lives = 2;
+var page = 0;
+var dieDelay = 0;
+var moneyX = width/1.08108108108;
+var moneySize = width/10;
+var eStarts = [height/4, height/3.2, height/1.33];
+var curo = false;
+var moneyY = round(random((moneySize/2) + width/20, (height - groundHeight) - moneySize/2));
+var paused = false;
+var homeAn = {
+    A1: 0,
+    A2: 0,
+    A3: 0};
+var howAn = {
+    A1: 0
+};
+var butonDel = 0;
+var howDelay = 0;
+
+var howText = "";
+
+var oriHowText = "up and down arrow keys to turn\navoid the red enemies\ncatch the gold coin... and\nDONT HIT THE GROUND!!!";
+
+//speeds and sizes of mobs and player
+var spriteSp = width/100, spriteAcc = 0.12, spriteSi = width/20, spriteHapDel = -1; enemySps = [spriteSp/2, spriteSp/2.666, spriteSp/4], enemySi = width/40, moneySize = width/10; 
+ 
+//background settings
+var groundHeight = height/5, topbarHeight = 0;
+
+
+
+
+
+var toRad = function(d){
+    return d*PI/180;
+};
+
+var Buton = function(x, y, size, color, textm, tColor, tsi, sOffSet, theta, orSi, strc, scene, onClick, type, w, h, anq){
+    this.x = x;
+    this.y = y;
+    this.size = size;
+    this.color = color;
+    this.textm = textm;
+    this.tColor = tColor;
+    this.tsi = tsi;
+    this.sOffSet = sOffSet;
+    this.theta = theta;
+    this.orSi = orSi;
+    this.scene = scene;
+    this.onClick = onClick;
+    this.strc = strc;
+    this.type = type;
+    this.w = w || size;
+    this.h = h || size;
+    this.orwi = this.w;
+    this.anq = anq;
+};
+
+Buton.prototype.draw = function(){
+    fill(this.color);
+    stroke(this.strc);
+    if(this.type === "circ"){
+        pushMatrix();
+        translate(this.x, this.y);
+        rotate(toRad(this.theta));
+        strokeWeight(width/160);
+        ellipse(0, 0, this.size, this.size);
+        fill(this.tColor);
+        textSize(this.tsi);
+        text(this.textm, 0, -3);
+        popMatrix();    
+    }else if(this.type === "rect"){
+        pushMatrix();
+        translate(this.x - this.w/2, this.y - this.h/2);
+        strokeWeight(width/160);
+        rect(0, 0, this.w, this.h, 5);
+        fill(this.tColor);
+        textSize(this.tsi);
+        text(this.textm, this.w/2, this.h/2);
+        popMatrix();
+    }   
+};
+
+Buton.prototype.mouseOver = function(){
+    if(this.type === "circ"){
+        return dist(mouseX, mouseY, this.x, this.y) < (this.size)/2;
+    }else if(this.type === "rect"){
+        return mouseX > this.x - this.w/2 && mouseX < this.x + this.w/2 && mouseY > this.y - this.h/2&& mouseY < this.y + this.h/2;
+    }   
+};
+
+Buton.prototype.doStuf = function(){
+    this.draw();
+    if(this.type === "circ"){
+        if(this.mouseOver()){
+            curo = true;
+            if(this.anq){
+                this.sOffSet += 5;
+                this.size += sin(toRad(this.sOffSet))
+            }
+        }else{
+            this.size = this.orSi;
+            this.sOffSet = 0;
+        } 
+    }else if(this.type === "rect"){
+        if(this.mouseOver()){
+            curo = true;
+            if (this.anq === true) {
+                this.sOffSet += 3;
+                this.w += sin(toRad(this.sOffSet));
+            }
+        }else{
+            if (this.anq) {
+                this.w = this.orwi;
+                this.sOffSet = 0;
+            }
+        } 
+    }
+};
+
+Buton.prototype.HMC = function(){
+    var use = false; 
+    for (var i = 0; i < this.scene.length; i++) {
+        if (this.scene[i] === page){
+            use = true;
+            continue;
+        }
+    }
+    if(use){
+        if(this.mouseOver() && butonDel <= 0){
+            butonDel = 10;
+            this.onClick();
+        }
+    }
+};
+
+var Sprite = function(x, y, size, angle, speed, color){
+    this.x = x;
+    this.y = y;
+    this.size = size;
+    this.angle = angle;
+    this.speed = speed;
+    this.color = color;
+    this.state = "anx";
+}
+
+Sprite.prototype.draw = function(){
+    pushMatrix();
+    translate(this.x, this.y);
+    rotate(this.angle + toRad(90));
+    fill(this.color);
+    noStroke();
+    ellipse(0, 0, this.size, this.size);
+    stroke(0);
+    strokeWeight(this.size/8);
+    point(0 - this.size/5, 0 - this.size/5);
+    point(0 + this.size/5, 0 - this.size/5);
+    noFill();
+    if(this.state === "norm"){
+        arc(0, this.size/6, this.size/2, this.size/5, 0, PI);
+    }else if (this.state === "Happy") {
+        arc(0, this.size/8, this.size/2, this.size/2, 0, PI);
+    }else if (this.state === "anx") {
+        line(-10, 7, 10, 7);
+    }
+    popMatrix();
+};
+
+Sprite.prototype.update = function() {
+    var xs = cos(this.angle)*this.speed;
+    var ys = sin(this.angle)*this.speed; 
+    this.x += xs;
+    this.y += ys;
+    this.y = constrain(this.y, this.size * 1.5, height - groundHeight - this.size/2);
+    this.angle = constrain(this.angle, toRad(-45), toRad(45));
+    if(this.x > width){
+        this.x = 0;
+        for(var i = 0; i < enemys.length; i++){
+            enemys[i].s+=0.004;
+        }
+    }
+};
+
+var Enemy = function(x, y, s, a, lastA){
+    this.x = x;
+    this.y = y;
+    this.s = s;
+    this.xs = 0;
+    this.ys = 0;
+    this.size = enemySi;
+    this.a = 0;
+    this.lastA = lastA;
+};
+
+Enemy.prototype.draw = function() {
+    pushMatrix();
+    translate(this.x, this.y);
+    noStroke();
+    fill(255, 0, 0);
+    ellipse(0, 0, this.size, this.size);
+    stroke(0);
+    strokeWeight(width/80);
+    point(0, 0);
+    stroke(255);
+    strokeWeight(width/200);
+    point(0, 0);
+    popMatrix();
+};
+
+Enemy.prototype.update = function(){
+    var x = this.x;
+    var y = -this.y;
+
+    var ax = 100;
+    var ay = 0;
+
+    var playerX = player.x;
+    var playerY = -player.y;
+
+    var bx = playerX - x;
+    var by = playerY - y;
+
+    var isNegative = ax * by - ay * bx < 0
+
+    vecs = [x - playerX, y - playerY];
+    vec0 = [100, 0];
+    
+    var dot = (vecs[0] * vec0[0]) + (vecs[1] * vec0[1]);
+    vecs[0] = sq(vecs[0]);
+    vecs[1] = sq(vecs[1]);
+    vec0[0] = sq(vec0[0]);
+    vec0[1] = sq(vec0[1]);
+    var angle = (acos(dot / (sqrt(vecs[0] + vecs[1]) * sqrt(vec0[0]+vec0[1]))) + toRad(
+        180))%(PI*2);
+    
+    if(isNegative){
+        angle = -angle;
+    }else{
+        angle = +angle;
+    }
+
+    this.a = angle;
+
+    this.xs = cos(this.a)*this.s;
+    this.ys = sin(this.a)*this.s;
+
+    this.x += this.xs;
+    this.y += this.ys;
+
+    this.y = constrain(this.y, player.size+(this.size)/2, height - groundHeight - this.size/2);
+    this.x = constrain(this.x, (this.size)/2, width - this.size/2);
+
+    pushMatrix();
+    translate(this.x, this.y);
+    rotate(this.a);
+    stroke(0);
+    line(0, 0, width/60, 0);
+    popMatrix();
+};
+
+var player = new Sprite(width/2, height/2, spriteSi, toRad(0), spriteSp, color(255, 255, 255));
+
+var buton1 = new Buton(400, 400, 100, color(255), "play", color(0), 25, 0, 0, 100, color(0), [0], function(){
+        player.x = width/2;
+        player.y = height/2;
+        player.angle = toRad(0);
+        player.speed = spriteSp;
+        score = 0;
+        lives = 1;
+        dieDelay = 0;
+        moneyY = round(random((moneySize/2) + width/20, (height - groundHeight) - moneySize/2));
+        enemySps = [spriteSp/2, spriteSp/2.666, spriteSp/4];
+        for(var i in enemys){
+            enemys[i].x = 100;
+            enemys[i].y = eStarts[i];
+            enemys[i].a = 0;
+            enemys[i].s = enemySps[i];
+        }
+        play();
+    },"circ",0 , 0, true
+);
+
+var buton2 = new Buton(400, 520, 100, color(255), "how", color(0), 25, 0, 0, 100, color(0), [0], function(){howDelay = 0;page=3;buton5.y = 600;howText = oriHowText},"circ",0 , 0, true);
+
+var buton3 = new Buton(400, 600, 80, color(255), "home", color(0), 25, 0, 0, 80, color(200, 0, 0), [2, 3], function(){audio.play();homeAn = {A1: 0,A2: 0,A3: 0};page=0},"circ",0 , 0, true);
+var buton4 = new Buton(400, 500, 80, color(255), "new", color(0), 25, 0, 0, 80, color(200, 0, 0), [2], function(){
+        audio.play();
+        player.x = width/2;
+        player.y = height/2;
+        player.angle = toRad(0);
+        player.speed = spriteSp;
+        score = 0;
+        lives = 1;
+        dieDelay = 0;
+        moneyY = round(random((moneySize/2) + width/20, (height - groundHeight) - moneySize/2));
+        enemySps = [spriteSp/2, spriteSp/2.666, spriteSp/4]
+        for(var i in enemys){
+            enemys[i].x = 100;
+            enemys[i].y = eStarts[i];
+            enemys[i].a = 0;
+            enemys[i].s = enemySps[i];
+        }
+        page = 1;
+    },"circ",0 , 0, true);
+
+var buton5 = new Buton(400, 20, 80, color(255), "home", color(0), 25, 0, 0, 80, color(0, 0, 0), [3], function(){homeAn = {A1: 0,A2: 0,A3: 0};page=0},"circ",0 , 0, true);
+
+//var buton12 = new Buton(400, 600, 80, color(255), "more", color(0), 25, 0, 0, 80, color(0, 0, 0), [3], function(){howText = "every time you score a point,\nyour speed increases by an\namount. and so does the enemy\nspeed. you can change that\namount in the settings",this.x = -20000, buton5.y = 600},"circ",0 , 0, true);
+
+var buton6 = new Buton(400, 640, 100, color(255), "settings", color(0), 25, 0, 0, 100, color(0, 0, 0), [0], function(){page=4},"circ",0 , 0, true);
+
+var buton7 = new Buton(400, 600, 80, color(255), "home", color(0), 25, 0, 0, 80, color(0, 0, 0), [4], function(){homeAn = {A1: 0,A2: 0,A3: 0};page=0},"rect", 80, 40, true);
+
+var buton8 = new Buton(350, 250, 80, color(255), "+", color(0), 25, 0, 0, 80, color(0, 0, 0), [4], function(){
+    if (spriteSp < 12) {audio.playbackRate = spriteSp/8;
+    audio.playbackRate = constrain(audio.playbackRate, 0.5, 2.0);spriteSp ++}
+},"rect", 40, 40, false);
+
+var buton9 = new Buton(450, 250, 80, color(255), "-", color(0), 25, 0, 0, 80, color(0, 0, 0), [4], function(){
+    if (spriteSp > 4) {audio.playbackRate = spriteSp/8;audio.playbackRate = constrain(audio.playbackRate, 0.5, 2.0);spriteSp --}
+},"rect", 40, 40, false);
+
+var buton10 = new Buton(320, 350, 80, color(255), "+", color(0), 25, 0, 0, 80, color(0, 0, 0), [4], function(){
+    if (spriteAcc < 0.25) {spriteAcc += 0.01};
+},"rect", 40, 40, false);
+
+var buton11 = new Buton(480, 350, 80, color(255), "-", color(0), 25, 0, 0, 80, color(0, 0, 0), [4], function(){
+    if (spriteAcc > 0.010) {spriteAcc -= 0.01};
+},"rect", 40, 40, false);
+
+var butons = [buton1, buton2, buton3, buton4, buton5, buton6, buton7, buton8, buton9, buton10, buton11];
+
+var enemie1 = new Enemy(width/8, eStarts[0], enemySps[0], 0, 0);
+var enemie2 = new Enemy(width/8, eStarts[1], enemySps[1], 0, 0);
+var enemie3 = new Enemy(width/8, eStarts[2], enemySps[2], 0);
+
+var enemys = [enemie1, enemie2, enemie3];
+
+var colisionTest = function(x1, y1, s1, x2, y2, s2){
+    return dist(x1, y1, x2, y2) < (s1/2)+(s2/2);
+};
+
+var home = function(){
+    page = 0;
+    
+    if(homeAn.A1 < width/2){
+        homeAn.A1 += width/80;
+    }
+    if(homeAn.A2 < width/2){
+        homeAn.A2 += width/80;
+    }
+    homeAn.A3 += width/400;
+    background(255, 255, 255);
+    for(var i = 0; i < height; i+=5){
+        noStroke();
+        fill(0, 255, 255, 15);
+        rect(0, i, width, i);
+    }
+    textSize(width/5.33333);
+    fill(255, 255, 0);
+    text("C  IN", homeAn.A1, width/8);
+    noStroke();
+    pushMatrix();
+    translate(homeAn.A1 - width/40, width/8);
+    rotate(cos(toRad(homeAn.A3))*(PI/2));
+    fill(200, 200, 0);
+    ellipse(5, 5, width/8, width/8);
+    fill(255, 255, 0);
+    ellipse(5, 5, width/10, width/10);
+    textSize(80);
+    fill(200, 200, 0);
+    text("$", 5, 5);
+    popMatrix();
+    textSize(width/5.33333);
+    text("CATCH", width - homeAn.A2, 250);
+    stroke(0);
+    strokeWeight(20);
+    line(100, 325, 700, 325);
+    buton1.doStuf();
+    buton2.doStuf();
+    buton6.doStuf();
+    if(curo){
+        cursor(HAND);
+    }else{
+        cursor();
+    }
+    curo = false;
+};
+
+var play = function(){
+    page = 1;
+    cursor();
+    fill(0, 250, 250, 150);
+    noStroke();
+    rect(0, 0, width, height);
+    fill(0, 200, 0);
+    noStroke();
+    rect(0, height - groundHeight, width, groundHeight);
+    for(var i = 0; i < 900; i += 10){
+        triangle(i, height-groundHeight, i + 10, height-groundHeight, i + 5, height-groundHeight-20);
+    }
+
+    fill(150);
+    rect(0, 0, width, player.size);
+    fill(255);
+    textSize(player.size/2);
+    text("score: " + score, width/13.333, (player.size/2) + (player.size/8));
+    fill(200, 200, 0);
+    ellipse(moneyX, moneyY, moneySize, moneySize);
+    fill(255, 255, 0);
+    ellipse(moneyX, moneyY, moneySize - width/40, moneySize - width/40);
+    fill(200, 200, 0);
+    textSize(width/16.666);
+    text("$", moneyX, moneyY);
+    stroke(0);
+    player.draw();
+    player.update();
+    // enemy kill test
+    for (var i = 0; i < enemys.length; i++) {
+        enemys[i].update();
+        enemys[i].draw();
+        if(colisionTest(enemys[i].x, enemys[i].y, enemySi, player.x, player.y, player.size)){
+            spriteDead = true;
+        }
+        if (dist(player.x, player.y, enemys[i].x, enemys[i].y) < 150) {
+            player.state = "anx";
+        }else{
+            norm = true;
+        }
+    }
+
+    if(spriteDead){
+        if(random(0,1) < 0.5){
+            var aud = audio2;
+        }
+        else{
+            var aud = audio3;
+        }
+        audio.pause();
+        aud.currentTime = 0;
+        aud.play();
+        spriteDead = false;
+        die();
+    }
+
+    if(norm){
+        player.state = "norm"; 
+    }
+    norm = false;
+    if(spriteHapDel > 0){
+        player.state = "Happy";
+    }
+    if(colisionTest(player.x, player.y, player.size, moneyX, moneyY, moneySize)){
+        var py = moneyY;
+        audio.playbackRate = spriteSp/8;
+        audio.playbackRate = constrain(audio.playbackRate, 0.5, 2.0);
+        spriteHapDel = 30;
+        audio1.currentTime = 0;
+        audio1.play();
+        moneyY = round(random((moneySize/2) + width/20, (height - groundHeight) - moneySize/2));
+        if(abs(py-moneyY) < moneySize){
+            moneyY = round(random((moneySize/2) + width/20, (height - groundHeight) - moneySize/2));
+            if(abs(py-moneyY) < moneySize){
+                moneyY = round(random((moneySize/2) + width/20, (height - groundHeight) - moneySize/2));
+                if(abs(py-moneyY) < moneySize){
+                    moneyY = round(random((moneySize/2) + width/20, (height - groundHeight) - moneySize/2));
+                }
+            }
+        }
+        score++;
+        player.speed += spriteAcc;
+        player.speed = constrain(player.speed, 0, 15);
+        for (var i = 0; i < enemys.length; i++) {
+            enemys[i].s += spriteAcc/10;
+        }
+    }
+    if(player.y >= (height - groundHeight) - (player.size/2)){
+        if(random(0,1) < 0.5){
+            var aud = audio2;
+        }
+        else{
+            var aud = audio3;
+        }
+        audio.pause();
+        aud.currentTime = 0;
+        aud.play();
+        die();
+    }
+    if(keyIsPressed){
+        if(keyCode == UP){
+            player.angle -= toRad(5);
+        }else if(keyCode == DOWN){
+            player.angle += toRad(5);
+        }
+    }
+};
+
+var die = function(){
+    page = 2;
+    if(dieDelay >= 50){
+        background(0);
+        if(score > topScore){
+            topScore = score;
+        }
+        fill(255);
+        textSize(width/5.5);
+        text("YOU DIED!", width/2, width/4);
+        textSize(width/16);
+        fill(0, 255, 0);
+        text("you scored: " + score + "\n high score: " + topScore, width/2, width/2);
+        buton3.y = 600;
+        buton3.strc = color(200, 0, 0);
+        buton3.doStuf();
+        buton4.doStuf();
+        if(curo){
+            cursor(HAND);
+        }else{
+            cursor();
+        }
+        curo = false;
+    }else if (dieDelay < 50){
+        noStroke();
+        fill(0, 0, 0, dieDelay);
+        rect(0, 0, width, height);
+    }
+    dieDelay++;
+};
+
+var how = function(){
+    page = 3;
+    cursor();
+    noStroke();
+    fill(0, 255, 255, howDelay);
+    rect(0, 0, 800, 800)
+    fill(0, 0, 0, howDelay/2);
+    textSize(200);
+    text("HOW", width/2  + cos(toRad(howDelay/10)) * 50, 100);
+    strokeWeight(25);
+    stroke(0, 0, 255, howDelay/2);
+    line(100 + cos(toRad(howDelay/10)) * 50, 200, 700+cos(toRad(howDelay/10))* 50, 200);
+    line(100 + cos(toRad(howDelay/10)) * 50, 480, 700+cos(toRad(howDelay/10))* 50, 480);
+    textSize(40);
+    text(howText, width/2, 340);
+    buton3.y = 400000;
+    buton5.doStuf();
+    // buton12.doStuf();
+    if(curo){
+        cursor(HAND);
+    }else{
+        cursor();
+    }
+    curo = false;
+    howDelay+=10;
+};
+
+var settings = function(){
+    page=4;   
+    background(255);
+    cursor(); 
+    for(var i = 0; i < height; i+=7){
+        noStroke();
+        fill(0, 255, 255, 15);
+        rect(0, i, width, i);
+    }
+    fill(200, 200, 0);
+    textSize(100);
+    text("SETTINGS", 400, 100);
+    stroke(255, 255, 0);
+    line(100, 160, 700, 160);
+    textSize(30);
+    fill(0, 0, 0);
+    text("Player speed:", 400, 200);
+    text(spriteSp, 400, 250);
+    text("Player acceleration:", 400, 300);
+    text(spriteAcc, 400, 350);
+    fill(0, 0, 0, 50);
+    noStroke();
+    rect(350, 228, 100, 45);
+    rect(310, 328, 160, 45);
+    buton7.doStuf();
+    buton8.doStuf();
+    buton9.doStuf();
+    buton10.doStuf();
+    buton11.doStuf();
+    if(curo){
+        cursor(HAND);
+    }else{
+        cursor();
+    }
+    curo = false;
+};
+
+draw = function(){
+    butonDel--;
+    spriteHapDel--;
+    if(page === 0){
+        home();
+    }else if(page === 1){
+        play();
+    }else if(page === 2){
+        die();
+    }else if (page === 3) {
+        how();
+    }else if (page === 4) {
+        settings();
+    }
+    if (keyIsPressed && keyCode === 32) {
+        
+    }
+    if (paused) {
+        noLoop();
+        noStroke();
+        audio.pause();
+        fill(0, 0, 0, 230);
+        rect(0, 0, width, height);
+        fill(255, 255, 255);
+        rect((width/2) - 20, (width/2) - 40, 20, 40, 10);
+        rect((width/2) + 20, (width/2) - 40, 20, 40, 10);
+    }
+    if(lives === 0){
+        page = 2;
+    }
+};
+
+keyPressed = function(){
+    keyIsPressed = true;
+    if(keyCode === 32){    
+        if (!paused) {
+           // paused = true;
+        }
+        if (paused){
+            loop();
+            audio.play();
+        }
+    }
+};
+
+keyReleased = function(){
+    keyIsPressed = false;
+};
+
+mouseClicked = function(){
+    for (var i = 0; i < butons.length; i++) {
+        butons[i].HMC();
+    }
+};
+
+audio.currentTime = 0;
+audio.play();
+window.setInterval(function(){
+    if(audio.currentTime >= val - 1){
+        audio.currentTime=0;
+        audio.play();
+    }
+}, 100);
+document.addEventListener("visibilitychange", event => {
+    if (document.visibilityState == "visible") {
+        loop();
+        if(page != 2){
+            audio.play();
+        }
+    } else {
+        noLoop();
+        audio.pause();
+    }
+})
+}   
+};
+
+
+
+var canvas = document.getElementById("mycanvas"); 
+var processingInstance = new Processing(canvas, sketchProc);
+
+ </script>
+
+</html>
