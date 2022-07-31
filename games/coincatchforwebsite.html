@@ -8,9 +8,14 @@
             font-size: 200px;
             font-family: "comic sans ms";
         }
+
+        #logo {
+            width: 100px;
+        }
     </style> 
 </head>
  <body>
+    <a href="../index.html"><img src="../logo.png" id="logo"></a>
     <h1 align="center">
         Coin Catch!
     </h1>
@@ -21,7 +26,7 @@
  </body>
  
  
- <script src="/Users/leomilberg/Documents/ProcessingJS/lib/processing.js"></script> 
+ <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
  
  <script>    
 var sketchProc = function(processingInstance) {
@@ -36,10 +41,10 @@ ellipse(0, 0, 0, 0);
  * Retrieved from https://audiosoundclips.com/chiptune-8-bit-volume-2-creative-commons-music-cc-3-0/
  * Under CC Share Alike 3.0 https://creativecommons.org/licenses/by-sa/3.0/
  */
-var audio1 = new Audio('/Users/leomilberg/Documents/ProcessingJS/projects/coin_catch/coin_kaching.m4a');
-var audio2 = new Audio("/Users/leomilberg/Documents/ProcessingJS/projects/coin_catch/dieSound.m4a");
-var audio3 = new Audio("/Users/leomilberg/Documents/ProcessingJS/projects/coin_catch/dieSound3.m4a");
-var audio = new Audio('/Users/leomilberg/Documents/ProcessingJS/projects/coin_catch/8-bit-racing-song2.m4a');
+var audio1 = new Audio('./coin_kachingcopy.m4a');
+var audio2 = new Audio("./dieSoundcopy.m4a");
+var audio3 = new Audio("./dieSound3copy.m4a");
+var audio = new Audio('./8-bit-racing-song2copy.m4a');
 audio.playbackRate = 1;
 var val;
 audio.addEventListener("loadedmetadata", function(){
