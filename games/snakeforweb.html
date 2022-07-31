@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@800&display=swap" rel="stylesheet"> 
+        <style type="text/css">
+            #logo {
+                width: 100px;
+            }
+
+            h1 {
+                font-size: 100px;
+                text-align: center;
+                font-family: dosis, sans-serif;
+                color: green;
+            }
+        </style>
+        <title>Snakey</title> 
+    </head>
+    <body>
+        <a href="../index.html"><img src="../logo.png" id="logo"></a>
+        <h1>SNAKE!</h1>
+        <p align="center"> 
+            <canvas id="mycanvas"></canvas> 
+        </p>
+    </body>
+ 
+    <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
+ 
+    <script>
+    var sketchProc = function(processingInstance) {
+     with (processingInstance) {
+size(600, 600); 
+frameRate(60);
+
+var toRad = function(deg){
+    return deg*PI/180;
+};      
+var mode = "easy";
+var foodX = 200;
+var foodY = 300;
+var snakeXSpeed = 0;
+var snakeYSpeed = 0;
+var score = 0;
+var speed = 2;
+var topScore = 0;
+var xS = [];
+var yS = [];
+var topS = [];
+var name = ["n"];
+var topSd = "";
+var dpr = 0;
+var page = 1;
+var h, m, s, d, mi, y;
+var alive = false;
+var maxLength = 50;
+var deadD = 0;
+var deadD2 = 0;
+var bodyc = function(x, y){
+    var res = false;
+    for(var i = 0; i < xS.length; i++){
+        if(x > xS[i] - 10 && x < xS[i] + 10 && y > yS[i] - 10 && y < yS[i] + 10){
+            res = true;
+        }
+    }
+    return res;
+};
+var armycivi = function(time){
+    if(time > 12){
+        time -= 12;
+    }
+    return time;
+};
+var padZero = function(num) {
+    var numDigits = 2;
+   var n = abs(num);
+   var zeros = max(0, numDigits - floor(n).toString().length );
+   var zeroString = pow(10, zeros).toString().substr(1);
+   return zeroString + n;
+};
+var Snake = function(config){
+    this.x = config.x;
+    this.y = config.y;
+    this.size = config.size;
+    this.angle = config.angle;
+};
+
+Snake.prototype.draw = function() {
+    fill(0, 255, 0);
+    rect(this.x, this.y, this.size, this.size);
+    if(this.angle === 0){
+        //fill(255, 0, 0);
+        rect(this.x + this.width, this.y + ((this.height/2) - 5), 10, 10, 100);
+    }
+};
+Snake.prototype.move = function(angle){
+    snakeXSpeed = speed * cos(toRad(this.angle));
+    snakeYSpeed = speed * sin(toRad(this.angle));
+    this.x += snakeXSpeed;
+    this.y += snakeYSpeed;
+};
+Snake.prototype.snakeAte = function(x, y){
+    return x > (this.x) &&
+    x < (this.x + this.size) &&
+    y > (this.y) &&
+    y < (this.y + this.size);
+};
+var snake1 = new Snake({
+    x: 200, 
+    y:200, 
+    size:40, 
+    angle:0
+});
+var Buton = function(config){
+    this.x = config.x;
+    this.y = config.y;
+    this.w = config.width;
+    this.h = config.height;
+    this.label = config.label;
+    this.color = config.color;
+    this.onClick = config.onclick;
+    this.tColor = config.tColor;
+    this.tx = config.tx;
+    this.ty = config.ty;
+};
+Buton.prototype.draw = function(){
+    fill(this.color);
+    textSize(18);
+    rect(this.x, this.y, this.w, this.h);
+    fill(this.tColor);
+    text(this.label, this.tx, this.ty);
+};
+Buton.prototype.isClicked = function(x, y){
+    return mouseX >= (this.x) &&
+           mouseX <= (this.x + this.w) &&
+           mouseY >= (this.y) &&
+           mouseY <= (this.y + this.h);
+};
+Buton.prototype.handleMouseClick = function(x, y){
+    if(this.isClicked(mouseX, mouseY)){
+        if((this.label === "play" ||this.label === "new") && (page === 1 || page === 3 || page === 4)){
+            foodX = random(5, width - 5);
+            foodY = random(39, height - 5);
+            score++;
+            maxLength += 30;
+            deadD = 0;
+            deadD2 = 0;
+            dpr = 0;
+            alive = true;
+            xS = [];
+            yS = [];
+            snake1.x = 200;
+            snake1.y = 200;
+            snake1.angle = 0;
+            maxLength = 50;
+            score = 0;
+            page = 2;
+        }else if(this.label === "how" && page === 1){
+            page = 4;
+        }else if(this.label === "home" && (page === 4 || page ===3 || page === 5)){
+            page = 1;
+            deadD = 0;
+            deadD2 = 0;
+            dpr = 0;
+        }else if(this.label === "top scores"){
+            page = 5;
+        }else if(this.label === "mode: " + mode){
+            if(mode === "easy"){
+                mode = "med";
+                this.label = "mode: " + mode;
+                this.width = 56 + mode.length * 12;
+                this.draw();
+                speed = 6;
+            }else if(mode === "med"){
+                mode = "hard";
+                this.label = "mode: " + mode;
+                this.width = 56 + mode.length * 12;
+                this.draw();
+                speed = 8;
+            }else if(mode === "hard"){
+                mode = "easy";
+                speed = 4;
+                this.label = "mode: " + mode;
+                this.width = 56 + mode.length * 12;
+                this.draw();
+                
+            }
+        }
+    }
+};
+var btn1 = new Buton({
+    x:178,
+    y:248,
+    width:40,
+    height:20,
+    color:color(0, 255, 0),
+    label:"new",
+    tColor: color(0, 0, 255),
+    tx:180,
+    ty:263,
+    onClick: function(){
+        page = 2;
+    }
+});
+var btn2 = new Buton({
+    x:150,
+    y:200,
+    width:50,
+    height:25,
+    color: color(0, 255, 0),
+    label: "how",
+    tColor: color(0, 0, 255),
+    tx:158,
+    ty:220,
+    onClick: function(){
+        
+    }
+});
+var btn3 = new Buton({
+    x:350,
+    y:200,
+    width:50,
+    height:25,
+    color: color(0, 255, 0),
+    label: "play",
+    tColor: color(0, 0, 255),
+    tx:358,
+    ty:220,
+    onClick: function(){
+        
+    }
+});
+var btn4 = new Buton({
+    x:350,
+    y:200,
+    width:50,
+    height:25,
+    color: color(0, 255, 0),
+    label: "home",
+    tColor: color(0, 0, 255),
+    tx:358,
+    ty:220,
+    onClick: function(){
+        
+    }
+});
+var btn5 = new Buton({
+    x:230,
+    y:200,
+    width:100,
+    height:25,
+    color: color(0, 255, 0),
+    label: "top scores",
+    tColor: color(0, 0, 255),
+    tx:240,
+    ty:220,
+    onClick: function(){
+        
+    }
+});
+var btn6 = new Buton({
+    x:225,
+    y:252,
+    width:56 + mode.length * 12,
+    height:25,
+    color: color(0, 255, 0),
+    label: "mode: " + mode,
+    tColor: color(0, 0, 255),
+    tx:228,
+    ty:270,
+    onClick: function(){
+        
+    }
+});
+var curSnake = function(){
+    fill(115, 42, 42);
+    noStroke();
+    rect(0, 400, 500, 50, 3);
+    fill(0, 255, 0);
+    quad(200, 400, 220, 400, 180, 450, 160, 450);
+    quad(250, 400, 270, 400, 230, 450, 210, 450);
+    quad(250 + 50, 400, 270 + 50, 400, 230 + 50, 450, 210 + 50, 450);
+    quad(250 + 100, 400, 270 + 100, 400, 230 + 100, 450, 210 + 100, 450);
+    rect(360, 450, 16, 30);
+    ellipse(368, 480, 16, 16);
+    stroke(0);
+    rect(170, 324, 40, 40);
+    noStroke();
+    rect(130, 350, 17, 50);
+    rect(130, 335, 50, 17, 5);
+    fill(0);
+    textSize(40);
+    text("?", 180, 320);
+    ellipse(195, 340, 10, 10);
+    fill(255, 0, 0);
+    rect(210, 341, 17, 15);
+};
+var howto = function(){
+    background(255);
+    stroke(0);
+    strokeWeight(1);
+    btn4.x = 5;
+    btn4.y = 570;
+    btn4.tx = 7;
+    btn4.ty = 588;
+    btn4.draw();
+    fill(0, 0, 255);
+    textSize(50);
+    text("HOW", 250, 150);
+    line(0, 160, 600, 160);
+    textSize(20);
+    fill(0, 200, 0);
+    text("use the arrow keys to move" + "\n" + "try not to hit the walls or yourself" + "\n" + "hit the blue ball to gain points", 180, 200);
+    curSnake();
+};
+var deadSnake = function(){
+    fill(115, 42, 42);
+    noStroke();
+    rect(100, 400, 600, 50);
+    fill(0, 255, 0);
+    quad(200, 400, 220, 400, 180, 450, 160, 450);
+    quad(250, 400, 270, 400, 230, 450, 210, 450);
+    quad(250 + 50, 400, 270 + 50, 400, 230 + 50, 450, 210 + 50, 450);
+    quad(250 + 100, 400, 270 + 100, 400, 230 + 100, 450, 210 + 100, 450);
+    rect(360, 450, 16, 30);
+    ellipse(368, 480, 16, 16);
+    stroke(0);
+    rect(118, 490, 40, 40);
+    noStroke();
+    rect(130, 400, 17, 100);
+    fill(0);
+    text("x  x", 123, 520);
+    fill(255, 0, 0);
+    rect(130, 531, 15, 20);
+};
+var gameOver = function(s){
+    
+    deadD++;
+    deadD2++;
+    if(deadD > 30 && deadD2 > 30){
+        background(255);
+        stroke(0);
+        if(s > topScore){
+            topSd = [m, d, y, h, mi];
+            topScore = s;
+        }
+        textSize(50);
+        fill(0);
+        text("YOU DIED!", 170, 200);
+        textSize(20);
+        text("score: " + s, 181, 236);
+        text("top score: " + topScore, 300, 235);
+        btn1.draw();
+        btn4.x = 300;
+        btn4.y = 250;
+        btn4.tx = 303;
+        btn4.ty = 267;
+        btn4.h = 20;
+        btn4.draw();
+        deadSnake();
+        //playSound(getSound("rpg/hit-splat"));
+    }else if(deadD < 30){
+        background(dpr, 0, 0);
+        dpr += 5;
+    }else if(deadD > 30 || deadD2 < 30){
+        background(255, deadD2*5, deadD2*5);
+    }
+    return topSd;
+};
+var tpScrs = function(topScore, topSd, name){
+    background(255);
+    stroke(0);
+    textFont(createFont(""));
+    strokeWeight(1);
+    fill(0, 255, 0);
+    textSize(50);
+    text("Top Score", 160, 147);
+    line(0, 160, 600, 160);
+    line(0, 560, 600, 560);
+    textSize(20);
+    btn4.x = 10;
+    btn4.y = 570;
+    btn4.tx = 13;
+    btn4.ty = 587;
+    btn4.h = 20;
+    btn4.draw();
+    text("Top Score: " + topScore, 225, 200);
+    if(topSd.length > 1){
+        text("at: "  + topSd[0] + "/" + topSd[1] + "/" + topSd[2] + " " + armycivi(topSd[3]) + ":" + padZero(topSd[4]), 200, 230);
+    }
+    
+};
+keyPressed = function(){
+    if(keyCode === RIGHT && snake1.angle != 180){
+        snake1.angle = 0; 
+    }else if(keyCode === LEFT && snake1.angle != 0){
+        snake1.angle = 180;
+    }else if(keyCode === UP && snake1.angle != 90){  
+        snake1.angle = -90;
+    } else  if (keyCode === DOWN && snake1.angle != -90){
+        snake1.angle = 90;
+    }
+};
+draw = function() {
+    h = hour();
+    mi = minute();
+    s = second();
+    d = day(); 
+    m = month();
+    y = year();
+    if(page === 1){
+        textFont(createFont(""));
+        background(240);
+        stroke(0);
+        strokeWeight(1);
+        for(var i = 0; i > 600; i++){
+            stroke(105, 15, 15);
+            line(i, 600, i, 0);
+        }
+        textSize(50);
+        fill(0, 0, 255);
+        fill(0, 255, 0);
+        text("SNAKE", 200, 150);
+        strokeWeight(5);
+        stroke(50);
+        line(0, 160, width, 160);
+        stroke(0);
+        strokeWeight(1);
+        btn2.draw();
+        btn3.draw();
+        btn5.draw();
+        fill(0, 255, 0);
+        btn6.width = 56 + mode.length * 12;
+        btn6.draw();
+        fill(255);
+        fill(0, 0, 255);
+        snake1.y = 400;
+        snake1.x += 2;
+        if(snake1.x > 580){
+            snake1.x = 50;
+        }
+        strokeWeight(2);
+        snake1.x+=1;
+        snake1.draw();
+        noStroke();
+        rect(snake1.x - 90, 410, 100, 20);
+        ellipse(snake1.x - 90, 420, 20, 20);
+    }else if(page === 2){
+        background(255);
+        stroke(0);
+        fill(255, 255, 255);
+        rect(1, 30, width - 2, height - 31);
+        rect(1, 1, width - 2, 30);
+        if (snake1.x < width - (snake1.size + 1) && snake1.x > 0 && snake1.y < height - snake1.size && snake1.y > 30 && alive){
+            snake1.move();
+            xS.push(snake1.x + snake1.size/2);
+            yS.push(snake1.y + snake1.size/2);
+        } else {
+            alive = false;
+            page = 3;
+        }
+        if (snake1.snakeAte(foodX, foodY)){
+            foodX = random(50, width - 50);
+            foodY = random(50, height - 50);
+            if(bodyc(foodX, foodY)){
+                foodX = random(50, width - 50);
+                foodY = random(50, height - 50);
+            }
+            score++;
+            maxLength += 30;
+        } 
+        if(xS.length > maxLength){
+            xS.splice(0, 1);
+            yS.splice(0, 1);
+        }
+        if(snake1.angle === 0){
+            if(bodyc(snake1.x + 40, snake1.y + 20)){
+                alive = false;
+                page = 3;
+            }
+        }if(snake1.angle === 180){
+            if(bodyc(snake1.x, snake1.y + 20)){
+                alive = false;
+                page = 3;
+            }
+        }if(snake1.angle === 90){
+            if(bodyc(snake1.x + 20, snake1.y + 40)){
+                alive = false;
+                page = 3;
+            }
+        }if(snake1.angle === -90){
+            if(bodyc(snake1.x + 20, snake1.y)){
+                alive = false;
+                page = 3;
+            }
+        }
+        if (page === 3 || alive === false){
+            gameOver(score);
+        }
+        if(alive){
+            fill(0, 255, 0);
+            snake1.draw();
+            for (var i = 0; i < xS.length; i++){
+                noStroke();
+                ellipse(xS[i], yS[i], 20, 20);
+                stroke(0);
+            }
+            strokeWeight(2);
+            text("score: " + score, 5, 20);
+            noStroke();
+            fill(0, 0, 255);
+            ellipse(foodX, foodY, 5, 5);
+        }
+        strokeWeight(2);
+    }else if (page === 3){
+        topSd = gameOver(score);
+    }else if(page === 4){
+        howto();
+    }else if(page === 5){
+        tpScrs(topScore, topSd, name);
+    }
+};
+mousePressed = function(){
+    btn1.handleMouseClick(mouseX, mouseY);
+    btn2.handleMouseClick(mouseX, mouseY);
+    btn3.handleMouseClick(mouseX, mouseY);
+    btn4.handleMouseClick(mouseX, mouseY);
+    btn5.handleMouseClick(mouseX, mouseY);
+    btn6.handleMouseClick(mouseX, mouseY);
+};
+
+
+    }};
+
+    var canvas = document.getElementById("mycanvas"); 
+    var processingInstance = new Processing(canvas, sketchProc); 
+ </script>
+
+</html>
