@@ -1,0 +1,667 @@
+<!DOCTYPE html>    
+<html> 
+    <head>
+        <title>Maze O' Doom</title> 
+        <style>
+            body {
+                background-color: rgb(60, 60, 60);   
+                font-family: "brush Script MT";
+                font-size: 50px;
+            }
+            h1 {
+                color:red;
+                text-align: center;
+            }
+            
+            #logo {
+            	width: 100px;
+            	
+
+            }
+
+        </style>
+    </head>
+    <body>
+    	<a href="../index.html"><img src="../logo.png" id="logo"></a>
+        <h1>THE MAZE OF DOOM</h1>
+        <p align="center"> 
+            <canvas id="mycanvas"></canvas> 
+        </p>
+        
+        
+    </body> 
+    <script src="/Users/leomilberg/Documents/ProcessingJS/lib/processing.js"></script> 
+    <script>
+var sketchProc = function(processingInstance) {
+with (processingInstance) {
+size(800, 800); 
+frameRate(60);
+
+// program here
+var page = 0;
+var playerX = 2;
+var playerY = 15;
+var w = 600;
+var h = 600;
+var titleAn = [0, 0];
+var tilesDiv = 3;
+var playerColor = color(0, 0, 255);
+var endColor = color(0, 255, 0);
+var pathColor = color(105, 105, 105);
+var blockSize = w/tilesDiv;
+var notLastDirection = 37;
+var moves = 0;
+var foodEaten = 0;
+var timer = 60 * 30;
+var stopWatch = 0;
+var foundPill1 = false;
+var endDelay = 0;
+var dieDelay = 0;
+var homeDelay = 30;
+var howDelay = 50;
+var eatFoodDelay = 0;
+var pill1Cord = [11, 17];
+var foodCordinates = [
+    [5, 2],
+    [14, 2],
+    [2, 4],
+    [12, 4],
+    [17, 4],
+    [5, 5],
+    [14, 7],
+    [3, 10],
+    [7, 10],
+    [18, 12],
+    [5, 13],
+    [20, 13],
+    [9, 16],
+    [5, 17],
+    [11, 17],
+    [11, 21],
+    [3, 22],
+    [9, 22],
+    [15, 22],
+    [5, 24],
+    [19, 25],
+    [3, 27],
+    [7, 28],
+    [13, 28]];
+var endCordinates = [
+    [22, 4],
+    [23, 4],
+    [24, 4],
+    [25, 4],
+    [22, 5],
+    [23, 5],
+    [24, 5],
+    [25, 5],
+    [24, 6],
+    [25, 6],
+    [23, 7],
+    [24, 7],
+    [25, 7],
+    [23, 8],
+    [24, 8],
+    [25, 8]];
+var mazeDatalv2 = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1],
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 2, 2, 2, 2],
+    [1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 2, 2, 2, 2],
+    [1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 2, 2],
+    [1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 2, 2, 2, 2],
+    [1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 2, 2, 2, 2],
+    [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+    [1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+    [1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1],
+    [1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1],
+    [1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1],
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1],
+    [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+];
+var mazeDatalv1 = [
+    
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1],
+                [1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1],
+                [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 2],
+                [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 2],
+                [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 2, 2],
+                [1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1],
+                [1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1],
+                [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1],
+                [1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1],
+                [1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                [1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1],
+                [0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1],
+                [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1],
+                [1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1],
+                [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+                [1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                
+];
+var mapp = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1],
+    [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 2, 2, 2, 2],
+    [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 2, 2, 2, 2],
+    [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 2, 2],
+    [1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2],
+    [1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 2, 2],
+    [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+    [1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1],
+    [1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+    [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+    [1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1],
+    [1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1],
+    [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]];
+// setting mazeDatalv2
+for(var i = 0; i < mazeDatalv2.length; i++){
+    for(var j = 0; j < mazeDatalv2[i].length; j++){
+        if(mazeDatalv2[i][j] == 1){
+            mazeDatalv2[i][j] = random(10, 60);
+        }
+    }}
+
+for(var i = 0; i < foodCordinates.length; i++){
+    mazeDatalv2[foodCordinates[i][1]][foodCordinates[i][0]] = 3;
+    mapp[foodCordinates[i][1]][foodCordinates[i][0]] = 3;
+}
+// setting mapp
+for(var i = 0; i < mapp.length; i++){
+    for(var j = 0; j < mapp[i].length; j++){
+            mapp[i][j] = 50;
+        
+    }}
+// Marking end spaces in mapp
+for(var i = 0; i < endCordinates.length; i++){
+    var xp = endCordinates[i][0];
+    var yp = endCordinates[i][1];
+    mapp[yp][xp] = 2; }
+textSize(30);
+textFont(createFont("fantasy"));
+mapp[playerY][playerX] = 0;
+mazeDatalv2[17][11] = 4;
+// button object
+
+var Button = function(x, y, w, h, c, t, tx, ty, ts, tc, onc, pa){
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.c = c;
+    this.t = t;
+    this.tx = tx;
+    this.ty = ty;
+    this.tc = tc;
+    this.ts = ts;
+    this.onc = onc;
+    this.pa = pa;
+};
+
+Button.prototype.draw = function(){
+    strokeWeight(1);
+    fill(this.c);
+    rect(this.x, this.y, this.w, this.h, 5);
+    fill(this.tc);
+    textSize(this.ts);
+    text(this.t, this.tx, this.ty)
+};
+Button.prototype.isClicked = function(x, y){
+    return x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h
+};
+
+Button.prototype.HMC = function(){
+    if(this.isClicked(mouseX, mouseY) && page == this.pa){
+        this.onc();
+    }   
+};
+
+
+
+//reset function
+var reset = function(){
+    page = 2;
+    moves = 0;
+    playerX = 2;
+    playerY = 15;
+    endDelay = 0;
+    dieDelay = 0;
+    homeDelay = 30;
+    timer = 30 * 60;
+    foodEaten = 0;
+    for(var i = 0; i < mapp.length; i++){
+        for(var j = 0; j < mapp[i].length; j++){
+            mapp[i][j] = 50;
+        
+        }
+    }
+    for(var i = 0; i < endCordinates.length; i++){
+        var xp = endCordinates[i][0];
+        var yp = endCordinates[i][1];
+        mapp[yp][xp] = 2; 
+    }
+    for(var i = 0; i < foodCordinates.length; i++){
+        mazeDatalv2[foodCordinates[i][1]][foodCordinates[i][0]] = 3;
+        mapp[foodCordinates[i][1]][foodCordinates[i][0]] = 3;
+    }
+    mapp[playerY][playerX] = 0;
+    stuf();
+};
+
+var btn1 = new Button(240, 280, 75, 30, color(25, 600, 42), "new", 250,  302, 30, color(0), function(){reset()}, 3);
+var btn2 = new Button(340, 580, 75, 30, color(25, 600, 42), "new", 350,  602, 30, color(0), function(){reset()}, 4);
+var btn3 = new Button(360, 275, 75, 50, color(25, 600, 42), "play", 370,  307, 30, color(0), function(){reset()}, 1);
+var btn4 = new Button(360, 475, 75, 50, color(25, 600, 42), "how", 370,  507, 30, color(0), function(){page = 5}, 1);
+var btn5 = new Button(360, 735, 75, 50, color(25, 600, 42), "back", 367,  773, 30, color(0), function(){homeDelay = 0; howDelay = 50; page = 1}, 5);
+var btn6 = new Button(360, 270, 85, 50, color(25, 600, 42), "home", 367,  308, 30, color(0), function(){homeDelay = 30; howDelay = 50; page = 1}, 3);
+var btn7 = new Button(335, 670, 85, 50, color(25, 600, 42), "home", 342,  708, 30, color(0), function(){timer = 60 * 3; howDelay = 50; homeDelay = 0; page = 1}, 4);
+
+// maze/map drawing function
+var drawMaze = function(mazeData, blockSize, m){
+
+    var bs = round(blockSize);
+    for(var y = 0; y < mazeData.length; y++){
+        for(var x = 0; x < mazeData[y].length; x++){
+            if (mazeData[y][x] == 0) {
+                noStroke();
+                fill(pathColor);
+            }else if(mazeData[y][x] >=10){
+                noStroke();
+                fill(mazeData[y][x] - 10);
+            }else if (mazeData[y][x] == 2) {
+                noStroke();
+                fill(endColor);
+            }else if(mazeData[y][x] == 3){
+                noStroke();
+                fill(255, 255, 0);
+            }else if(mazeData[y][x] == 4){
+                noStroke();
+                fill(0, 155, 155);
+            }
+            if(m == 2 && y == playerY && x == playerX){
+                noStroke();
+                fill(playerColor);
+            }
+            if (m == 1) {
+                if(mazeData[y][x] == 3){
+                    fill(pathColor);
+                    rect(bs * (x - playerX), bs * (y - playerY), bs, bs);
+                    fill(255, 255, 0);
+                    rect(bs * (x - playerX), bs * (y - playerY), bs, bs, 500);
+                    strawBerry(bs*(x - playerX)+bs/2, bs*(y - playerY)+bs/3);
+                }else{
+                    rect(bs * (x - playerX), bs * (y - playerY), bs, bs);
+                }
+                //rect(bs * (x - playerX), bs * (y - playerY), bs, bs);
+            }else if(m == 2){
+                noStroke();
+                rect(10 + (x * bs), 613 + (y * bs), bs - 0.5, bs - 0.5);
+            }
+        }
+    }};
+
+// strawberry graphics
+var strawBerry = function(x, y){
+    fill(255, 0, 0);
+    noStroke();
+    triangle(x, y + 50, x - 20, y, x + 20, y);
+    stroke(0);
+    strokeWeight(2);
+    point(x + 4, y+ 12);
+    point(x + 0, y+ 30);
+    point(x + 4, y+ 22);
+    point(x + -3, y+ 11);
+    point(x + -12, y+ 5);
+    point(x + 0, y+ 36);
+    point(x + -1, y+ 20);
+    point(x + 12, y+ 6);
+    point(x + 9, y+ 17);
+    point(x + -7, y+ 19);
+    stroke(19, 87, 12);
+    strokeWeight(10);
+    line(x, y, x + 13, y + -5);
+    line(x, y, x + 4, y + -10);
+    line(x, y, x + -5, y + -9);
+    line(x, y, x + -9, y + -4);
+};
+
+//title scene
+var title = function(){
+    noStroke();
+    page = 0;
+    background(0, 100, 150);
+    fill(255, 200, 0, 5);
+    for(var i = 200; i < 300; i++){
+        ellipse(400, 0, 100 + i, 100 + i);
+    }
+    for(var i = 500; i < 1700; i+=100){
+        ellipse(400, 0, i, i);
+    }
+    fill(0, 150, 0);
+    rect(0, 500, 800, 300);
+    textFont(createFont("comic sans ms"));
+    textSize(15);
+    fill(0);
+    text("Waaaayyy to sunny, but who cares?\n\nP.S.: you get trapped in the maze latter", 5, 15);
+    textSize(50);
+    fill(90);
+    textFont(createFont("fantasy"));
+    text("THE MAZE OF DOOM", titleAn[1] + 10, titleAn[0] + 10);
+    fill(255, 0, 0);
+    text("THE MAZE OF DOOM", titleAn[1], titleAn[0]);
+    fill(90);
+    textSize(40);
+    fill(0);
+    text("Click to begin", titleAn[1] + 120, titleAn[0] + 100);
+    if(titleAn[0] < 200){
+        titleAn[0]+=4;
+    }
+    if(titleAn[1] < 100){
+        titleAn[1]+=2;
+    }};
+
+// home scene
+var home = function(){
+    page = 1;
+    homeDelay--;
+    if (homeDelay <= 0){
+        background(0);
+        noStroke();
+        fill(50, 50, 50);
+        rect(800/3, 0, 800/3, 800);
+        rect(0, 800/3, 800, 800/3);
+        fill(200, 0, 0);
+        textSize(50);
+        text("THE MAZE OF DOOM", 125, 420);
+        textSize(40);
+        fill(0);
+        text("HOME", 325, 100);
+        btn3.draw();
+        btn4.draw();
+    }
+    else if (homeDelay > 0) {
+        background(0, homeDelay*(100/30), homeDelay*(100/30));
+    } 
+};
+
+// win scene
+var win = function(m, s, f){
+    page = 3;
+    endDelay++;
+    var quotient = Math.trunc(s/60);
+    var remainder = s % 60;
+    if(endDelay >= 30){
+        background(0, 100, 150);
+        fill(255, 255, 0, 5);
+        noStroke();
+        for(var i = 200; i < 400; i += 2){
+            ellipse(0, 0, i, i);
+        }
+        for(var i = 400; i < dist(0, 0, 1600, 1600); i += 100){
+            ellipse(0, 0, i, i);
+        }
+        fill(0, 150, 0);
+        rect(0, 500, 800, 300);
+        fill(255, 0, 0);
+        textSize(60);
+        text("YOU ESCAPED!!", 118, 100);
+        textSize(20);
+        if(quotient == 0){
+            text("It took you: " + m + " moves, and " + remainder + " seconds!", 190, 200);
+        }else if(quotient == 1){
+            text("It took you: " + m + " moves, " + quotient + " minute, and " + remainder + " seconds!", 190, 200);
+        }else if(quotient > 1){
+            text("It took you: " + m + " moves, " + quotient + " minutes, and " + remainder + " seconds!", 190, 200);
+        }
+        text("you ate " + f + " strawBerrys!", 250, 400)
+        btn1.draw();
+        btn6.draw();
+    }else if(endDelay < 30){
+        fill(0, 100, 100, 255/30);
+        rect(-10, -10, 820, 820);
+        //fill(255, 255, 0, 5);
+        rect(-10, -10, 820, 820);
+    }   
+};
+
+// die scene
+var die = function(){
+    page = 4;
+    dieDelay++;
+    if (dieDelay >= 30){
+        background(155, 0, 0);
+        fill(0);
+        textSize(150);
+        text("YOU DIED", 10, 200);
+        textSize(50);
+        text("Moves: " + moves, 300, 500);
+        fill(playerColor);
+        rect(340, 300, 100, 100, 10);
+        fill(0);
+        textSize(35);
+        textFont(createFont("sans serif"));
+        text("X  X", 358, 342);
+        textFont(createFont("fantasy"));
+        strokeWeight(3);
+        stroke(0, 0, 0);
+        line(363, 370, 415, 370);
+        fill(200, 0, 0);
+        noStroke();
+        rect(370, 372, 10, 20, 2);
+        stroke(0, 0, 0);
+        strokeWeight(1);
+        btn2.draw();
+        btn7.draw();
+    } else if (dieDelay < 30) {
+        background(dieDelay*(100/30), 0, 0)
+    }
+};
+// how scene
+var how = function(){
+    page = 5;
+    howDelay+=2;
+    if(howDelay >= 100){
+        background(100);
+        fill(200, 0, 0);
+        textSize(150);
+        textFont(createFont("fantasy"));
+        text("HOW", 200, 170);
+        strokeWeight(10);
+        stroke(0);
+        line(100, 220, 700, 220);
+        line(100, 600, 700, 600);
+        textSize(25);
+        fill(0);
+        textLeading(40)
+        text("You are the blue square with eyes. use the arrow keys\nto move. on the bottom left is the map, which markes\nhere youve been as grey. on the right is the time left\nand the moves count. the goal is to reach the end\n(witch is marked with green on the map and in the maze)\nbefore you starve to death.\nwhen you go over a strawberry(food), your time will\nincrease by 5 seconds.", 130, 280);
+        btn5.draw();
+    }else if(howDelay < 100){
+        background(howDelay, howDelay, howDelay)
+    }
+};
+
+// player drawing function
+var player = function(x, y, eyeSize){
+    fill(playerColor);
+    rect(x, y, blockSize/2, blockSize/2, 10);
+    fill(0);
+    ellipse(x + blockSize/8, y + blockSize/8, eyeSize, eyeSize);
+    ellipse(x + 3 * (blockSize/8), y + blockSize/8, eyeSize, eyeSize);
+    strokeWeight(3);
+    stroke(0);
+    line(x + blockSize/8, y + 3 * (blockSize/8), x + 3 * (blockSize/8), y + 3 * (blockSize/8))
+    strokeWeight(1);};
+
+// calls main functions
+var stuf = function(){
+    if(foundPill1 == true){
+        tilesDiv = 5;
+        blockSize = w/tilesDiv;
+    }
+    eatFoodDelay -= 5;
+    pushMatrix();
+    translate(w/2 - blockSize/2, h/2 - blockSize/2);
+    drawMaze(mazeDatalv2, blockSize, 1);
+    player(0 + blockSize/4, 0 + blockSize/4, (blockSize/2)/5);
+    popMatrix();
+    fill(255, 255, 255);
+    stroke(255, 255, 255);
+    var sideBarSize = 200;
+    rect(0, height - sideBarSize, width, sideBarSize);
+    rect(width - sideBarSize, 0, sideBarSize, height);
+    stroke(20);
+    fill(20);
+    strokeWeight(5);
+    line(-5, height - sideBarSize, (width - sideBarSize) - 1, height - sideBarSize);
+    line(width - sideBarSize, (height - sideBarSize) - 1, width - sideBarSize, -5);
+    line(-5, height - 2, width, height - 2);
+    line(width - 2, -5, width - 2, height);
+    line(width - sideBarSize + 1, 130, width+2, 130);
+    line(width - sideBarSize + 1, 0, width+2, 0);
+    noStroke();
+    rect(-167, 602, 305, 4);
+    rect(-1, 602, 4, 2000);
+    rect(-1, 776, 153, 95);
+    rect(136, 665, 12, 200);
+    rect(148, 602, 10, 200);
+    rect(126, 602, 30, 25);
+    textSize(30);
+    text("moves:" + "\n" + "    "+moves, 650, 70);
+    fill(255, 255, 255);
+    noStroke();
+    rect(646, 148, 120, 110);
+    fill(0);
+    text(round(timer/60)+"\nseconds\nleft", 652, 180); 
+    fill(255, 0, 0, eatFoodDelay);
+    textSize(450);
+    text("+5", 102, 430);
+    fill(0); 
+    strokeWeight(1);
+    drawMaze(mapp, 5, 2);
+    if(playerX == 23 && playerY == 6){
+        page = 3;
+    }
+};
+
+// draw function
+draw = function(){
+    if(page == 0){
+        title();
+    }
+    if(page == 1){
+        home();
+    }
+    if(page == 2){
+        timer --;
+        stopWatch++;
+        stuf();
+    }
+    if (page == 3) {
+        win(moves, round(stopWatch/60), foodEaten);
+    }
+    if(page == 4){
+        die();
+    }
+    if(page == 5){
+        how();
+    }
+    if(timer <= 0){
+        page = 4;
+    }
+};
+
+// moves player
+keyPressed = function(){
+    if(page == 2){
+        if ((keyCode == RIGHT || key.toString == "d") && mazeDatalv2[playerY][playerX + 1] < 10 && mazeDatalv2[playerY][playerX + 1] != 2) {
+            playerX++;
+            notLastDirection = 37;
+            moves++;
+        }else if ((keyCode == LEFT || key.toString == "a") && mazeDatalv2[playerY][playerX - 1] < 10 && mazeDatalv2[playerY][playerX - 1] != 2) {
+            playerX--;
+            notLastDirection = 39;
+            moves++;
+        }else if ((keyCode == DOWN || key.toString == "w") && mazeDatalv2[playerY + 1][playerX] < 10 && mazeDatalv2[playerY + 1][playerX] != 2) {
+            playerY++;
+            notLastDirection = 38;
+            moves++;
+        }else if ((keyCode == UP || key.toString == "s")&& mazeDatalv2[playerY - 1][playerX] < 10 && mazeDatalv2[playerY - 1][playerX] != 2) {
+            playerY--;
+            notLastDirection = 40;
+            moves++;
+        }else if (key.toString() == " ") {
+            reset();
+        }
+        if(mazeDatalv2[playerY][playerX] == 3){
+            mazeDatalv2[playerY][playerX] = 0;
+            timer += 60 * 5;
+            foodEaten++;
+            eatFoodDelay = 255;
+        }
+        mapp[playerY][playerX] = 0;
+        stuf();
+    }}; 
+
+mouseClicked = function(){
+    btn1.HMC();
+    btn2.HMC();
+    btn3.HMC();
+    btn4.HMC();
+    btn5.HMC();
+    btn6.HMC();
+    btn7.HMC();
+    if(page == 0){
+        page = 1;
+        //stuf();
+    }
+};
+
+}
+};
+
+    var canvas = document.getElementById("mycanvas"); 
+    var processingInstance = new Processing(canvas, sketchProc); 
+ </script>
+
+</html>
