@@ -1,0 +1,387 @@
+<!DOCTYPE html>    
+<html> 
+    <head>
+        <title>Maze O' Doom</title> 
+        <style>
+            body {
+                background-color: rgb(250, 250, 250);
+                font-family: "brush Script MT";
+                font-size: 50px;
+            }
+            h1 {
+
+                text-align: center;
+            }
+            
+            #logo {
+            	width: 100px;
+            	
+
+            }
+
+        </style>
+    </head>
+    <body>
+    	<a href="../index.html"><img src="../logo.png" id="logo"></a>
+        <h1>Pallet</h1>
+        <p align="center"> 
+            <canvas id="mycanvas"></canvas> 
+        </p>
+        
+        
+    </body> 
+    <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
+    <script>
+var sketchProc = function(processingInstance) {
+with (processingInstance) {
+size(600, 600); 
+frameRate(60);
+
+// program here
+
+
+//messy code:
+//{
+var penX, penY, X, penSize = 5;
+
+var xs =[], ys = [], cs = [], pss = [];
+var btns = [];
+var page = 0;
+var mouseIsPressed = false;
+var keyIsPressed = false;
+var pastMousePos = false;
+background(23, 53, 161);
+textSize(29);
+stroke(0, 0, 0);
+line(0, 25, 600, 25);
+line(20, 25, 20, 570);
+var penColor = color(255, 255, 255);
+var printDrawing = function(x, y, size, color){
+    noStroke();
+    for (var i = 0; i < x.length; i++){
+        fill(color[i]);
+        ellipse(x[i], y[i], size[i], size[i]);
+    }
+    stroke(0);
+};
+var pointer = function(color, size){
+    noStroke();
+    fill(255, 255, 255);
+    ellipse(10, 10, 25, 25);
+    fill(color);
+    ellipse(10, 10, size, size);
+    stroke(0, 0, 0);
+};
+var button = function(config){
+    this.x = config.x;
+    this.y = config.y;
+    this.label = config.label;
+    this.height = config.height;
+    this.width = config.width;
+    this.color = config.color;
+    this.onClick = config.onClick;
+    this.ts = config.ts;
+};
+button.prototype.isMouseInside = function() {
+    return mouseX > (this.x) &&
+           mouseX < (this.x + this.width) &&
+           mouseY > (this.y) &&
+           mouseY < (this.y + this.height);
+};
+button.prototype.handleMouseClick = function() {
+    if (this.isMouseInside()) {
+        this.onClick();
+    }
+};     
+button.prototype.draw = function() {
+    fill(this.color);
+    rect(this.x, this.y, this.width, this.height);
+    fill(0, 0, 0);
+    textSize(this.ts);
+    text(this.label, this.x + 5, this.y + 25);
+};
+var btn1 = new button ({
+    x: 0,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(255, 0, 0),
+    ts: 0,
+    onClick: function(){
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn2 = new button ({
+    x: 20,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(255, 255, 0),
+    ts: 0,
+    onClick: function(){
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn3 = new button({
+    x: 40,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(0, 0, 0),
+    ts: 0,
+    onClick: function() {
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn4 = new button({
+    x: 60,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(0, 255, 0),
+    ts: 0,
+    onClick: function() {
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn5 = new button ({
+    x: 80,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(0, 115, 0),
+    ts: 0,
+    onClick: function() {
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn6 = new button ({
+    x: 100,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(0, 255, 255),
+    ts: 0,
+    onClick: function() {
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn7 = new button ({
+    x: 120,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(0, 0, 255),
+    ts: 0,
+    onClick: function() {
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn8 = new button ({
+    x: 140,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(255, 0, 255),
+    ts: 0,
+    onClick: function() {
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn9 = new button ({
+    x: 160,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 20,
+    color: color(115, 42, 42),
+    ts: 0,
+    onClick: function() {
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn10 = new button ({
+    x: 180,
+    y: 570,
+    label: "X",
+    height: 30,
+    width: 30,
+    color: color(255, 255, 255),
+    ts: 29,
+    onClick: function() {
+        penColor = this.color;
+        pointer(this.color, penSize);
+    }
+});
+var btn11 = new button ({
+    x: 210,
+    y: 570,
+    label: "",
+    height: 30,
+    width: 30,
+    color: color(255),
+    ts: 0,
+    onClick: function() {
+        if (penSize < 25) {
+            penSize++;
+        }
+        pointer(penColor, penSize);
+    }
+});
+var btn12 = new button ({
+    x: 240,
+    y: 570,
+    label: "︎︎",
+    height: 30,
+    width: 30,
+    color: color(255),
+    ts: 0,
+    onClick: function() {
+        penSize--;
+        pointer(penColor, penSize);
+    }
+});
+
+btns = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12];
+var drawTheBackground = function(){
+    background(255, 255, 255);
+    stroke(0, 0, 0);
+    for(var i = 0; i < btns.length; i++){
+        btns[i].draw();
+    }
+    
+    fill(0, 255, 0);
+    noStroke();
+    triangle(btn11.x + 5, btn11.y + 20, btn11.x + 25, btn11        .y + 20, btn11.x + 15, btn11.y + 10);
+    
+    triangle(btn12.x + 5, btn12.y + 10, btn12.x + 25, btn12.y +     10, btn12.x + 15, btn12.y + 20);
+    stroke(0);
+    line(0, 25, width, 25);
+    line(0, height - 30, width, height - 30);
+    
+    pointer(penColor, penSize);
+    
+};
+drawTheBackground();
+var btn13 = new button ({
+    x: 520,
+    y: 0,
+    label: "clear",
+    height: 25,
+    width: 75,
+    color: color(0, 255, 0),
+    ts: 29,
+    onClick: function() {
+        strokeWeight(1);    
+        drawTheBackground();
+        btn13.draw();
+    }
+});
+
+btn13.draw();
+
+draw = function() {
+    if (mouseIsPressed || keyIsPressed ){
+        if (mouseY < 570 && mouseY > 25) { 
+            penX = mouseX;
+            penY = mouseY;
+            penY = constrain(penY, 40, 558);    
+            penX = constrain(penX, 32.5, 588.5);
+            strokeWeight(penSize);
+            stroke(penColor);
+            if (keyCode !== 49){
+                if(pastMousePos !== false){
+                    line(penX, penY, pastMousePos[0], pastMousePos[1]);
+                }else{
+                    line(penX, penY, penX, penY);
+                }
+                
+                pastMousePos = [mouseX, mouseY];
+            }
+        }
+    }
+
+};
+keyPressed = function(){
+    if(keyCode === 8){
+        drawTheBackground();
+        btn13.draw();
+    }else if (keyCode === 49){
+        penColor = btn1.color;
+        pointer(btn1.color, penSize);
+    }else if (keyCode === 50){
+        penColor = btn2.color; 
+        pointer(btn2.color, penSize);
+    }else if (keyCode === 51){
+        penColor = btn3.color; 
+        pointer(btn3.color, penSize);
+    }else if (keyCode === 52){
+        penColor = btn4.color; 
+        pointer(btn4.color, penSize);
+    }else if (keyCode === 53){
+        penColor = btn5.color; 
+        pointer(btn5.color, penSize);
+    }else if (keyCode === 54){
+        penColor = btn6.color; 
+        pointer(btn6.color, penSize);
+    }else if (keyCode === 55){
+        penColor = btn7.color; 
+        pointer(btn7.color, penSize);
+    }else if (keyCode === 56){
+        penColor = btn8.color; 
+        pointer(btn8.color, penSize);
+    }else if (keyCode === 57){
+        penColor = btn9.color; 
+        pointer(btn6.color, penSize);
+    }else if (keyCode === 61 && penSize < 25){
+        penSize++;
+        pointer(penColor, penSize);
+    }else if (keyCode === 173 && penSize > 0){
+        penSize--; 
+        pointer(penColor, penSize);
+    }
+};
+mousePressed = function(){
+    for(var i = 0; i < btns.length; i++){
+        btns[i].handleMouseClick();
+    }
+    btn13.handleMouseClick();
+    mouseIsPressed = true;
+}; 
+mouseReleased = function(){
+    mouseIsPressed = false;
+    pastMousePos = false;
+}
+keyPressed = function(){
+    keyIsPressed = true;
+}
+keyReleased = function(){
+    keyIsPressed = false;
+}
+
+//}
+}
+};
+
+    var canvas = document.getElementById("mycanvas"); 
+    var processingInstance = new Processing(canvas, sketchProc); 
+ </script>
+
+</html>
