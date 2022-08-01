@@ -78,7 +78,26 @@
                 strokeWeight(1);
                 hexegon(0, 0, r);
                 hexegon(0, 0, r-10);
-                hexegon(0,0,r-30);hexegon(0,0,r-50);hexegon(0,0,r-70);hexegon(0,0,r-90);hexegon(0,0,r-110);popMatrix();a+=3;r+=gs;if(r>130){gs=-0.5;}if(r<-130){gs=0.5;}noStroke();fill(0,98,255,1);for(var i=0;i<400;i+=0.5){ellipse(300,300,-r-(20+i),-r-(20+i));}};
+                hexegon(0, 0, r-30);
+                hexegon(0, 0, r-50);
+                hexegon(0, 0, r-70);
+                hexegon(0, 0, r-90);
+                hexegon(0, 0, r-110);
+                popMatrix();
+                a += 3;
+                r += gs;
+                if(r > 130){
+                    gs =- 0.5;
+                }
+                if(r <- 130){
+                    gs=0.5;
+                }
+                noStroke();
+                fill(0, 98, 255, 1);
+                for(var i = 0; i < 400; i += 0.5){
+                    ellipse(300, 300, -r-(20 + i), -r-(20 + i));
+                }
+            };
 
         }
     };
