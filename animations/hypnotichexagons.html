@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@800&display=swap" rel="stylesheet"> 
+        <style type="text/css">
+            #logo {
+                width: 100px;
+            }
+
+            h1 {
+                font-size: 100px;
+                text-align: center;
+                font-family: dosis, sans-serif;
+            }
+        </style>
+        <title>Hypnotic hexagons</title> 
+    </head>
+    <body>
+        <a href="../index.html"><img src="../logo.png" id="logo"></a>
+        <h1>HEXAGONS!</h1>
+        <p align="center"> 
+            <canvas id="mycanvas"></canvas> 
+        </p>
+    </body>
+ 
+    <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
+ 
+    <script>
+
+    var sketchProc = function(processingInstance) {
+        with (processingInstance) {
+            size(600, 600); 
+            frameRate(60);
+
+            var toRad = function(deg){
+                return deg*PI/180;
+            };      
+
+            var a=0;
+            var r=10;
+            var gs=0.5;
+            strokeWeight(3);
+            stroke(255);
+            var hexegon = function(x, y, r){
+                var points = [];
+                for(var i = 0; i < 360; i+= 360/6){
+                    points.push([x + (cos(toRad(i)) * r), y + (sin(toRad(i)) * r)]);
+                }
+                for(var i=0; i<points.length-1; i++){
+                    line(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1]);
+                }
+                line(points[points.length - 1][0],points[points.length - 1][1],points[0][0],points[0][1]);
+            };
+            draw=function(){
+                fill(0, 40);
+                rect(0, 0, width, height);
+                pushMatrix();
+                translate(300, 300);
+                rotate(toRad(a));
+                strokeWeight(3);
+                stroke(255, 0, 0);
+                hexegon(0, 0, r);
+                stroke(0, 255, 0);
+                hexegon(0,0,r-20);
+                stroke(0, 0, 255);
+                hexegon(0, 0, r-40);
+                stroke(255, 255, 0);
+                hexegon(0, 0, r-60);
+                stroke(255, 0, 255);
+                hexegon(0, 0, r-80);
+                stroke(0, 255, 255);
+                hexegon(0, 0, r-100);
+                stroke(255, 0, 0);
+                hexegon(0, 0, r-120);
+                stroke(255);
+                strokeWeight(1);
+                hexegon(0, 0, r);
+                hexegon(0, 0, r-10);
+                hexegon(0,0,r-30);hexegon(0,0,r-50);hexegon(0,0,r-70);hexegon(0,0,r-90);hexegon(0,0,r-110);popMatrix();a+=3;r+=gs;if(r>130){gs=-0.5;}if(r<-130){gs=0.5;}noStroke();fill(0,98,255,1);for(var i=0;i<400;i+=0.5){ellipse(300,300,-r-(20+i),-r-(20+i));}};
+
+        }
+    };
+
+    var canvas = document.getElementById("mycanvas"); 
+    var processingInstance = new Processing(canvas, sketchProc); 
+ </script>
+
+</html>

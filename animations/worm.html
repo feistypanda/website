@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@800&display=swap" rel="stylesheet"> 
+        <style type="text/css">
+            #logo {
+                width: 100px;
+            }
+
+            h1 {
+                font-size: 100px;
+                text-align: center;
+                font-family: dosis, sans-serif;
+                color: rgb(232, 144, 130);
+            }
+        </style>
+        
+        <title>worm</title>
+    
+    </head>
+    <body>
+        
+        <a href="../index.html">
+            <img src="../logo.png" id="logo">
+        </a>
+        
+        <h1>WORM!</h1>
+
+        <p align="center"> 
+            <canvas id="mycanvas"></canvas> 
+        </p>
+    </body>
+ 
+ 
+    <script src="/Users/leomilberg/Documents/ProcessingJS/lib/processing.js"></script> 
+ 
+    <script>    
+        var sketchProc = function(processingInstance) {
+            with (processingInstance) {
+                size(400, 400); 
+                frameRate(60);
+                textAlign(CENTER, CENTER);
+
+                var colors = [color(255, 0, 0), color(255, 255, 0), color(255, 0, 255), color(0, 100, 255), color(255, 100, 100), color(232, 144, 130)];
+                var curCol = 0;
+                var msgs = ["move and click\nthe mouse!", "BREAKDANCING\nWORM!!", "press any key!"];
+                var msg = 0;
+                var ultraShakeDel = 0;
+
+                var Worm = function(amplitude, period, color, l, x, y) {
+                    this.startAngle = 0;
+                    this.amplitude = amplitude;
+                    this.period = period;
+                    this.color = color;
+                    this.angleVel = (TWO_PI / this.period) * 5;
+                    this.l = l;
+                    this.x = x;
+                    this.y = y;
+                };
+
+                Worm.prototype.update = function() {
+                    this.startAngle += TWO_PI / this.period;
+                };
+
+                Worm.prototype.draw = function() {
+                    pushMatrix();
+                    translate(0, this.y);
+                    var a = this.startAngle;
+                    stroke(this.color);
+                    strokeWeight(30);
+                    noFill();
+                    var y;
+                    var highest = 0;
+                    strokeJoin(ROUND);
+                    beginShape();
+                    for (var x = this.x; x <= this.x + this.l; x += 7) {
+                        y = this.amplitude*sin(a);
+                        if(y > highest){
+                            highest = y;
+                        }
+                        vertex(x, y);
+                        a += this.angleVel;
+                    }
+                    endShape();
+                    noStroke();
+                    fill(0);
+                    ellipse(x, y, 5, 5);
+                    fill(0, 200, 0);
+                    rect(0, highest + 15, width, height);
+                    fill(0, 100, 0);
+                    for(var i = 0; i < width/10; i++){
+                        ellipse(((i * 20) - frameCount%20), highest + 100, 5, 5);
+                    }
+                    popMatrix();
+                };
+
+                var worm = new Worm(50, 65, color(232, 144, 130), 200, 100, 200);
+
+                textSize(50);
+
+                draw = function() {
+                    background(0, 255, 255);
+                    worm.update();
+                    worm.draw();
+                    fill(0, 0, 0, 100);
+                    text(msgs[msg], 200, 50);
+                    ultraShakeDel--;
+                    if(ultraShakeDel > 0){
+                        worm.period = 15;
+                        worm.angleVel = (TWO_PI / 15) * map(width, 0, width, 1, 5);
+                    }else{
+                        worm.period = 65;
+                        worm.angleVel = (TWO_PI / worm.period) * map(mouseX, 0, width, 1, 5);
+                    }
+                };
+
+                mousePressed = function(){
+                    worm.color = colors[curCol];
+                    curCol++;
+                    if(curCol >= colors.length){
+                        curCol = 0;
+                    }
+                    msg++;
+                    if(msg >= msgs.length){
+                        msg = 0;
+                    }
+                    
+                };
+
+
+
+                keyPressed = function(){
+                    ultraShakeDel = 60;
+                };
+
+            } 
+        };
+
+var canvas = document.getElementById("mycanvas"); 
+var processingInstance = new Processing(canvas, sketchProc);
+
+ </script>
+
+</html>
