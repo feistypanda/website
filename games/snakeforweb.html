@@ -341,16 +341,20 @@ var gameOver = function(s){
     if(deadD > 30 && deadD2 > 30){
         background(255);
         stroke(0);
-        if(s > topScore){
+        if (getCookie("topScr") !== "") {
+            topScore = getCookie("topScr");
+        }
+        if(score > topScore){
             topSd = [m, d, y, h, mi];
-            topScore = s;
+            topScore = score;
+            setCookie("topScr", topScore, 100);
         }
         textSize(50);
         fill(0);
         text("YOU DIED!", 170, 200);
         textSize(20);
-        text("score: " + s, 181, 236);
-        text("top score: " + topScore, 300, 235);
+        text("score: " + score, 181, 236);
+        text("top score: " + getCookie("topScr"), 300, 235);
         btn1.draw();
         btn4.x = 300;
         btn4.y = 250;
@@ -529,6 +533,28 @@ mousePressed = function(){
     btn5.handleMouseClick(mouseX, mouseY);
     btn6.handleMouseClick(mouseX, mouseY);
 };
+function setCookie(cname, cvalue, exdays) {
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    let expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    let name = cname + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(';');
+    for(let i = 0; i <ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
 
 
     }};

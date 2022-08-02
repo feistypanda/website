@@ -559,15 +559,19 @@ var die = function(){
     page = 2;
     if(dieDelay >= 50){
         background(0);
+        if (getCookie("topScr") !== "") {
+            topScore = getCookie("topScr"); 
+        }
         if(score > topScore){
             topScore = score;
+            setCookie("topScr", topScore, 100);
         }
         fill(255);
         textSize(width/5.5);
         text("YOU DIED!", width/2, width/4);
         textSize(width/16);
         fill(0, 255, 0);
-        text("you scored: " + score + "\n high score: " + topScore, width/2, width/2);
+        text("you scored: " + score+ "\n high score: " + getCookie("topScr"), width/2, width/2);
         buton3.y = 600;
         buton3.strc = color(200, 0, 0);
         buton3.doStuf();
@@ -724,6 +728,28 @@ document.addEventListener("visibilitychange", event => {
         audio.pause();
     }
 })
+function setCookie(cname, cvalue, exdays) {
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    let expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+  let name = cname + "=";
+  let decodedCookie = decodeURIComponent(document.cookie);
+  let ca = decodedCookie.split(';');
+  for(let i = 0; i <ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+}
 }   
 };
 
