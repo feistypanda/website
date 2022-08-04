@@ -346,6 +346,7 @@ var gameOver = function(s){
         }
         if(score > topScore){
             topSd = [m, d, y, h, mi];
+            setCookie("topSd", topSd, 100);
             topScore = score;
             setCookie("topScr", topScore, 100);
         }
@@ -389,7 +390,11 @@ var tpScrs = function(topScore, topSd, name){
     btn4.ty = 587;
     btn4.h = 20;
     btn4.draw();
-    text("Top Score: " + topScore, 225, 200);
+    if (getCookie("topScr") !== "") {
+        text("Top Score: " + getCookie("topScr"), 225, 200);
+    }else{
+        text("Top Score: " + topScore, 225, 200);
+    }
     if(topSd.length > 1){
         text("at: "  + topSd[0] + "/" + topSd[1] + "/" + topSd[2] + " " + armycivi(topSd[3]) + ":" + padZero(topSd[4]), 200, 230);
     }
