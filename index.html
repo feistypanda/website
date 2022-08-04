@@ -42,12 +42,13 @@
             	z-index: 1;
             	width: 470px;
             	margin: 30 0 0 15;
+            	right: 2px;
 			}
 
 			#games-back {
 				background-color: rgb(200, 200, 200);
-				border-radius: 20px;
-				
+				border-bottom-right-radius: 20px;
+				border-top-left-radius: 20px;
 				width: 490px;
 				height: 380px;
 				position: relative;
@@ -60,7 +61,7 @@
 				width: 460px;
 			}
 
-			table, th, td {
+			.ga-table {
   				border: 3px groove;
 			}
 
@@ -78,15 +79,15 @@
             	width: 470px;
             	margin: 30 0 0 15;
             	float: right;
-            	bottom: 761px;
-            	right: 340px;
+            	left: 20px;
+            	
 
 			}
 
 			#animations-back {
 				background-color: rgb(200, 200, 200);
-				border-radius: 20px;
-				
+				border-bottom-right-radius: 20px;
+				border-top-left-radius: 20px;
 				width: 490px;
 				height: 380px;
 				position: relative;
@@ -101,7 +102,6 @@
 
 			#games h3, #animations h3 {
 				position: relative;
-				left: 170px;
 				font-size: 30px;
 			}
 
@@ -126,59 +126,65 @@
 			<a href="animations/index.html">animations</a><br>
 			<a href="./aboutme.html">About me</a>
 		</div>
-		<div id="games">
-		<a href="games/index.html" id = "gameslink"><h3>Games!</h3></a>
 		<table>
 			<tr>
-		    	<th>Game</th>
-		    	<th>Photo</th>
-		    	<th>Description</th>
+				<td><div id="games">
+		<a href="games/index.html" id = "gameslink"><h3>Games!</h3></a>
+		<table class="ga-table">
+			<tr>
+		    	<th class="ga-table">Game</th>
+		    	<th class="ga-table">Photo</th>
+		    	<th class="ga-table">Description</th>
 		  	</tr>
 		  	<tr>
-		    	<td><a href="games/coincatchforwebsite.html">Coin Catch</a></td>
-		    	<td><a href="games/coincatchforwebsite.html"><img src="games/coincatch.png" class="game-img"></a></td>
-		    	<td>Fly through the air<br>to catch the coin!</td>
+		    	<td class="ga-table"><a href="games/coincatchforwebsite.html">Coin Catch</a></td>
+		    	<td class="ga-table"><a href="games/coincatchforwebsite.html"><img src="games/coincatch.png" class="game-img"></a></td>
+		    	<td class="ga-table">Fly through the air<br>to catch the coin!</td>
 		  	</tr>
 		  	<tr>
-		    	<td><a href="games/mazeforweb.html">Maze 'o Doom</a></td>
-		    	<td><a href="games/mazeforweb.html"><img src="games/maze.png" class="game-img"></a></td>
-		    	<td>Find your way<br>out of the maze!</td>
+		    	<td class="ga-table"><a href="games/mazeforweb.html">Maze 'o Doom</a></td>
+		    	<td class="ga-table"><a href="games/mazeforweb.html"><img src="games/maze.png" class="game-img"></a></td>
+		    	<td class="ga-table">Find your way<br>out of the maze!</td>
 		  	</tr>
 		  	<tr>
-		    	<td><a href="games/snakeforweb.html">Snakey</a></td>
-		    	<td><a href="games/snakeforweb.html"><img src="games/snake.png" class="game-img"></a></td>
-		    	<td>Slither for food,<br>just dont eat yourself!</td>
+		    	<td class="ga-table"><a href="games/snakeforweb.html">Snakey</a></td>
+		    	<td class="ga-table"><a href="games/snakeforweb.html"><img src="games/snake.png" class="game-img"></a></td>
+		    	<td class="ga-table">Slither for food,<br>just dont eat yourself!</td>
 		  	</tr>
 		</table>
-		</div>
-		<div id="games-back"></div>
-		<div id="animations">
+		</div></td>
+				<td><div id="animations">
 		<a href="animations/index.html" id = "animationslink"><h3>Animations!</h3></a>
-		<table>
+		<table class="ga-table">
 			<tr>
-		    	<th>Animation</th>
-		    	<th>Photo</th>
-		    	<th>Description</th>
+		    	<th class="ga-table">Animation</th>
+		    	<th class="ga-table">Photo</th>
+		    	<th class="ga-table">Description</th>
 		  	</tr>
 		  	<tr>
-		  		<td><a href="animations/hypnotichexagons.html">Hypnotic Hexagons</a></td>
-		    	<td><a href="animations/hypnotichexagons.html">
+		  		<td class="ga-table"><a href="animations/hypnotichexagons.html">Hypnotic Hexagons</a></td>
+		    	<td class="ga-table"> <a href="animations/hypnotichexagons.html">
 		    		<img src="animations/hexagons.png" class="ani-img">
 		    	</a></td>
-		    	<td>Watch the hypnotic<br>hexagons twirl around!</td>
+		    	<td class="ga-table">Watch the hypnotic<br>hexagons twirl around!</td>
 		  	</tr>
 		  	<tr>
-		    	<td><a href="animations/worm.html">Breakdancing Worm</a></td>
-		    	<td><a href="animations/worm.html"><img src="animations/worm.png" class="ani-img"></a></td>
-		    	<td>Watch the worm squirm</td>
+		    	<td class="ga-table"><a href="animations/worm.html">Breakdancing Worm</a></td>
+		    	<td class="ga-table"><a href="animations/worm.html"><img src="animations/worm.png" class="ani-img"></a></td>
+		    	<td class="ga-table">Watch the worm squirm</td>
 		  	</tr>
 		  	<tr>
-		    	<td><a href="animations/pallet.html">Pallet</a></td>
-		    	<td><a href="animations/pallet.html"><img src="animations/pallet.png" class="ani-img"></a></td>
-		    	<td>Drawing program</td>
+		    	<td class="ga-table"><a href="animations/pallet.html">Pallet</a></td>
+		    	<td class="ga-table"><a href="animations/pallet.html"><img src="animations/pallet.png" class="ani-img"></a></td>
+		    	<td class="ga-table">Drawing program</td>
 		  	</tr>
 		</table> 
-		</div> 
+		</div> </td>
+			</tr>
+		</table>
+		
+		<div id="games-back"></div>
+		
 		<div id="animations-back"></div>
 		
 	</body>
