@@ -352,21 +352,21 @@ var gameOver = function(s){
     if(deadD > 30 && deadD2 > 30){
         background(255);
         stroke(0);
-        if (getCookie("topScr") !== "") {
-            topScore = getCookie("topScr");
+        if (getCookie("topScore") !== "") {
+            topScore = getCookie("topScore");
         }
         if(score > topScore){
             topSd = [m, d, y, h, mi];
             setCookie("topSd", topSd, 100);
             topScore = score;
-            setCookie("topScr", topScore, 100);
+            setCookie("topScore", topScore, 100);
         }
         textSize(50);
         fill(0);
         text("YOU DIED!", 170, 200);
         textSize(20);
         text("score: " + score, 181, 236);
-        text("top score: " + getCookie("topScr"), 300, 235);
+        text("top score: " + getCookie("topScore"), 300, 235);
         btn1.draw();
         btn4.x = 300;
         btn4.y = 250;
@@ -401,8 +401,8 @@ var tpScrs = function(topScore, topSd, name){
     btn4.ty = 587;
     btn4.h = 20;
     btn4.draw();
-    if (getCookie("topScr") !== "") {
-        text("Top Score: " + getCookie("topScr"), 225, 200);
+    if (getCookie("topScore") !== "") {
+        text("Top Score: " + getCookie("topScore"), 225, 200);
     }else{
         text("Top Score: " + topScore, 225, 200);
     }
@@ -530,7 +530,49 @@ draw = function() {
             text("score: " + score, 5, 20);
             noStroke();
             fill(0, 0, 255);
-            ellipse(foodX, foodY, 5, 5);
+            pushMatrix();
+            translate((foodX - foodX * 0.15), (foodY - foodY * 0.15));
+            scale(0.15);
+            stroke(224, 202, 4);
+            strokeWeight(90);
+            line(foodX, foodY, foodX + 100, foodY);
+            strokeWeight(40);
+            stroke(255, 100, 100);
+            line(foodX - 40, foodY, foodX + 140, foodY);
+            strokeWeight(10);
+            stroke(255, 0, 0);
+            noFill();
+            strokeJoin(ROUND);
+            beginShape();
+            vertex(foodX - 40, foodY - 10);
+            vertex(foodX - 20, foodY + 10);
+            vertex(foodX, foodY - 10);
+            vertex(foodX + 20, foodY + 10);
+            vertex(foodX + 40, foodY - 10);
+            vertex(foodX + 60, foodY + 10);
+            vertex(foodX + 80, foodY - 10);
+            vertex(foodX + 100, foodY + 10);
+            vertex(foodX + 120, foodY - 10);
+            vertex(foodX + 140, foodY + 10);
+            endShape(open);
+
+            stroke(255, 255, 0);
+            beginShape();
+            vertex(foodX - 40, foodY - 20);
+            vertex(foodX - 20, foodY);
+            vertex(foodX, foodY - 20);
+            vertex(foodX + 20, foodY);
+            vertex(foodX + 40, foodY - 20);
+            vertex(foodX + 60, foodY);
+            vertex(foodX + 80, foodY - 20);
+            vertex(foodX + 100, foodY);
+            vertex(foodX + 120, foodY - 20);
+            vertex(foodX + 140, foodY);
+            endShape(open);
+            popMatrix();
+
+
+
         }
         strokeWeight(2);
     }else if (page === 3){

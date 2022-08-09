@@ -251,7 +251,7 @@ var btn11 = new button ({
     ts: 0,
     onClick: function() {
         if (penSize < 25) {
-            penSize++;
+            penSize+=5;
         }
         pointer(penColor, penSize);
     }
@@ -265,7 +265,7 @@ var btn12 = new button ({
     color: color(255),
     ts: 0,
     onClick: function() {
-        penSize--;
+        penSize-=5;
         pointer(penColor, penSize);
     }
 });
@@ -314,11 +314,12 @@ draw = function() {
             penX = mouseX;
             penY = mouseY;
             penY = constrain(penY, 40, 558);    
-            penX = constrain(penX, 32.5, 588.5);
+            penX = constrain(penX, 0, 588.5);
             strokeWeight(penSize);
             stroke(penColor);
             if (keyCode !== 49){
                 if(pastMousePos !== false){
+                    pastMousePos[1] = constrain(pastMousePos[1], 40, 557);
                     line(penX, penY, pastMousePos[0], pastMousePos[1]);
                 }else{
                     line(penX, penY, penX, penY);

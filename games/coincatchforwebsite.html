@@ -583,6 +583,7 @@ var die = function(){
     if(dieDelay >= 50){
         background(0);
         if (getCookie("topScr") !== "") {
+            topScore = 0;
             topScore = getCookie("topScr"); 
         }
         if(score > topScore){
