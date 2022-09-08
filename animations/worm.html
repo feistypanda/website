@@ -103,7 +103,7 @@ You should have received a copy of the GNU General Public License along with wor
                     rect(0, highest + 15, width, height);
                     fill(0, 100, 0);
                     for(var i = 0; i < width/10; i++){
-                        ellipse(((i * 20) - frameCount%20), highest + 100, 5, 5);
+                        ellipse(((i * 20) - (frameCount * 2)%20), highest + 100, 5, 5);
                     }
                     popMatrix();
                 };
