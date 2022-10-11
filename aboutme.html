@@ -21,10 +21,11 @@
 			}
 
 			#about_text {
-				width: 500px;
+				width: 700px;
 				background-color: rgb(200, 200, 200);
 				border-radius: 5px;
 				margin: 5px;
+				padding: 15px;
 				font-size: 20px;
 			}
 
@@ -55,39 +56,124 @@
 				margin: 3px;
 			}
 
-			td {
-				text-align: center;
+			#snakeImg {
+				border: 5px solid black;
+				width: 600px;
+				border-radius: 5px;
+				margin-top: 10px;
+				margin-bottom: 10px;
+			}
+
+			#snakeImgCode {
+				padding-left: 20px;
+				border: 5px solid black;
+				border-radius: 5px;
+			}
+
+			#deadsnk{
+				width: 300px;
+			}
+
+			#btnCode, #dotCode{
+				font-size: 12px;
+				background-color: rgb(225, 225, 225);
+				width: 545px;
+				overflow-x: auto;
+				border-radius: 5px;
+				border: 5px solid black;
+				padding: 5px;
 			}
 
 		</style>
 		<title>
-			About Me
+			About
 		</title>
 	</head>
  	<body>
  		
- 		<h1><a href="./index.html"><img src="logo.png/" id="logo"><a>About Me</h1>
+ 		<h1><a href="./index.html"><img src="logo.png/" id="logo"><a>About</h1>
 		
-		<div id="about_text"><p>I am a skydiving racoon from Venus, and I take summer vacation
+		<!-- <div id="about_text"><p>I am a skydiving racoon from Venus, and I take summer vacation
 		 	on Earth. I am beaming this Website to you via wind-up rubber rat, and my favorite pastime is playing "the floor is lava" with real lava.
-		</p></div>
-		
-		<table>
-			<tr>
-				<td><img src="./venus_surface.jpg" class="venus"></td>
-				<td><img src="./racoon.jpg" class="racoon"></td>
-				<td><img src="./rubber_rat.jpg" class="rat"></td>
-			</tr>
-			<tr>
-				<td><h3>Where I Live</h3></td>
-				<td><h3>Me, Myself, And I</h3></td>
-				<td><h3>Wi-Fi Rat</h3></td>
-			</tr>
-		</table>
-		
-		
-		
-		
+		</p></div> -->
+		<div id="about_text">				
+				Welcome to my website! I made this website from scratch using Prossesing js and HTML.
+				Prossesing js is a computer programing language that lets you draw simple shapes and animate them. HTML is what most websites are made with. It stands for hypertext markup language. "from scratch" means that I am not using a "canned website", and all of the graphics are made from simple geometric shapes such as rectangles and ellipses. Here is the dead snake from snakey, and the code to draw it:
+				<table id="snakeImg">
+					<tr>
+						<td><img src="deadSnake.png" id="deadsnk"></td>
+						<td id="snakeImgCode">
+							<code>
+							fill(115, 42, 42); <br>
+						    noStroke();<br>
+						    rect(100, 400, 600, 50);<br>
+						    fill(0, 255, 0);<br>
+						    quad(200, 400, 220, 400, 180, 450, 160, 450);<br>
+						    quad(250, 400, 270, 400, 230, 450, 210, 450);<br>
+						    quad(250 + 50, 400, 270 + 50, 400, 230 + 50, 450, 210 + 50, 450);<br>
+						    quad(250 + 100, 400, 270 + 100, 400, 230 + 100, 450, 210 + 100, 450);<br>
+						    rect(360, 450, 16, 30);<br>
+						    ellipse(368, 480, 16, 16);<br>
+						    stroke(0);<br>
+						    rect(118, 490, 40, 40);<br>
+						    noStroke();<br>
+						    rect(130, 400, 17, 100);<br>
+						    fill(0);<br>
+						    text("x  x", 123, 520);<br>
+						    fill(255, 0, 0);<br>
+						    rect(130, 531, 15, 20);<br>
+							</code>
+						</td>
+						
+					</tr>
+				</table>
+			To do things that might look simple, like turning the player in coincatch, or making the worm squirm, I had to use math like trigonometry. For the enemies in coincatch I had to use dot products (I don't really know what that is, I just copied it from the internet and made it work):
+
+<code>
+	<pre id = "dotCode">
+var x = this.x;
+var y = -this.y;
+var ax = 100;
+var ay = 0;
+var playerX = player.x;
+var playerY = -player.y;
+var bx = playerX - x;
+var by = playerY - y;
+var isNegative = ax * by - ay * bx < 0
+vecs = [x - playerX, y - playerY];
+vec0 = [100, 0];
+var dot = (vecs[0] * vec0[0]) + (vecs[1] * vec0[1]);
+vecs[0] = sq(vecs[0]);
+vecs[1] = sq(vecs[1]);
+vec0[0] = sq(vec0[0]);
+vec0[1] = sq(vec0[1]);
+var angle = (
+	acos(
+		dot / (sqrt(vecs[0] + vecs[1]) * sqrt(vec0[0]+vec0[1]))
+	) + toRad(180)
+)%(PI*2);
+
+if(isNegative){
+    angle = -angle;
+}else{
+    angle = +angle;
+}
+	</pre>
+</code>
+			It also takes (more simple) math to calculate if the mouse is inside of a button when it is clicked:
+<code>
+	<pre id = "btnCode">
+if(this.type === "circ"){
+    return dist(mouseX, mouseY, this.x, this.y) < (this.size)/2;
+}else if(this.type === "rect"){
+	isInsideX = mouseX > this.x - this.w/2 && mouseX < this.x + this.w/2;
+	isInsideY = mouseY > this.y - this.h/2&& mouseY < this.y + this.h/2;
+    return isInsideX && isInsideY;
+}   
+	</pre>
+</code> 
+			I made sound effects using Garage band, and recordings that I made using ordinary household objects such as pots and coins. To save the high scores in snakey and coincatch I had to learn how to use cookies.
+		<!-- </div> -->
 		
 	</body>
 </html>
