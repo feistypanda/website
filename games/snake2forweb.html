@@ -1,0 +1,1594 @@
+<!--Copyright 2023 Leo Milberg
+
+This file is part of snake 2.
+
+snake 2 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+snake 2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with snakey. If not, see <https://www.gnu.org/licenses/>.
+-->
+<!DOCTYPE html>
+<html> 
+  <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@800&display=swap" rel="stylesheet"> 
+        <style type="text/css">
+            #logo {
+                width: 100px;
+            }
+
+            h1 {
+                font-size: 100px;
+                text-align: center;
+                font-family: dosis, sans-serif;
+                color: green;
+            }
+        </style>
+        <title>Snake 2</title> 
+    </head>
+    <body>
+        <a href="../index.html"><img src="../logo.png" id="logo"></a>
+        <a href="#mycanvas"><p align="center"> 
+            <canvas id="mycanvas"></canvas> 
+        </p></a>
+    </body>
+ 
+ 
+  <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
+
+  <script>
+  var programCode = function(processingInstance) {
+    with (processingInstance) {
+size(600, 600); 
+
+{
+frameRate(60);
+smooth();
+textAlign(CENTER);
+angleMode = "radians";} // setup 
+
+{
+var squareNum = 15;
+var squareSize = width/squareNum;
+var offset = 0.1 * squareSize;
+var squareColors = [color(0, 200, 0), color(0, 255, 0)];
+var scene = "home";
+var highScore = 0;
+var score = 0;
+var colblue = color(61, 90, 219);
+var wallColor = color(153, 0, 0);
+var walls = [];
+var speeds = [20, 10, 4, 2];
+var speedNames = ["slow", "normal", "fast", "too fast"];
+var currentSpeed = 1;
+var foodX = squareSize * 3, foodY = squareSize * 3;
+var homeButtonsDelay = 30;
+var howButtonsDelay = 30;
+var settingsButtonsDelay = 30;
+var deadScreenFade = 0;
+var foodType = "";
+var startmillis = millis();
+var frames = 0;
+var particleSystemRTime = 0;
+var startMillis = millis();
+var startFrames = frameCount;
+var startMouseX = 0;
+var startMouseY = 0;
+var modes = ["norm", "wall", "flip"];
+var currentMode = 0;
+var colors = [[color(255, 165, 0), color(255, 255, 50)], [color(200, 50, 200), color(255, 150, 150)], [color(210, 4, 45), color(255, 165, 0)], [color(58, 223, 210), color(255, 255, 50)], [ color(247,197,204), color(255, 165, 0)], [color(64,142,198), color(30,39,97)]];
+var currentHead = 0;
+var canSpawnWall = true;
+var showFPS = true;
+var settingsGameModeX = 300;
+var settingsColorX = 300;
+var settingsSpeedX = 300;
+var minDistToFood = 0;
+var streak = 0;} // global variables 
+
+{
+
+var playbackgrnd = function(){
+    var currentCol = 0;
+    noStroke();
+    for (var i = 0; i < squareNum; i++) {
+        for (var j = 0; j < squareNum; j++) {
+            fill(squareColors[currentCol]);
+            rect(i * squareSize, j * squareSize, squareSize, squareSize);
+            currentCol++;
+            if(currentCol> 1){
+                currentCol = 0;
+            }
+        }    
+    }
+};
+
+var deadbackgrnd = function(){
+    if(deadScreenFade < 255){
+        fill(0, deadScreenFade/10);
+        noStroke();
+        rect(0, 0, width * 2, height * 2);
+    } else{
+        background(0);
+    }   
+};
+
+var homebackgrnd = function(){
+    background(255);
+
+    strokeJoin(ROUND);
+    strokeWeight(25);
+    stroke(colblue);
+    noFill();
+
+    beginShape();
+    vertex(200, 200);
+    vertex(200, 150);
+    vertex(250, 150);
+    vertex(250, 200);
+    endShape();
+
+    beginShape();
+    vertex(300, 200);
+    vertex(300, 100);
+    vertex(300, 150);
+    vertex(350, 150);
+    endShape();
+
+    beginShape();
+    vertex(400, 130);
+    vertex(400, 200);
+    vertex(400, 165);
+    vertex(450, 200);
+    vertex(400, 165);
+    vertex(450, 130);
+    endShape();
+
+    beginShape();
+    vertex(500, 130);
+    vertex(550, 130);
+    endShape();
+    beginShape();
+    vertex(500, 165);
+    vertex(550, 165);
+    endShape();
+    beginShape();
+    vertex(500, 200);
+    vertex(550, 200);
+    endShape();
+
+    strokeWeight(40);
+    stroke(255);
+
+    beginShape();
+    vertex(200, 100);
+    vertex(360, 100);
+    vertex(360, 200);
+    endShape();
+
+    strokeWeight(25);
+    stroke(225, 225, 0);
+
+    beginShape();
+    vertex(0, 200);
+    vertex(150, 200);
+    vertex(150, 150);
+    vertex(100, 150);
+    vertex(100, 100);
+    vertex(360, 100);
+    vertex(360, 235);
+    vertex(600, 235);
+    endShape();
+};
+
+var food = function(x, y, size){
+    noStroke();
+    strokeJoin(ROUND);
+    fill(111, 104, 237);
+    ellipse(x, y, size, size/1.15);
+    fill(0, 50);
+    ellipse(x, y - size/4.5, size/2, size/1.15/2);
+    stroke(0, 50);
+    noFill();
+    strokeWeight(size/20);
+    beginShape();
+        vertex(x, y - size/2.6);
+        vertex(x - size/6, y - size/4);
+        vertex(x, y - size/9);
+        vertex(x + size/6, y - size/4);
+    endShape(CLOSE); 
+};
+
+var gear = function(x, y, size){
+    stroke(255);
+    noFill();
+    strokeWeight(size/2.5);
+    
+    ellipse(x, y, size, size);
+    rectMode(CENTER);
+    
+   
+    for(var i = 0; i < 360/30; i++){
+        noStroke();
+        fill(255);
+        pushMatrix();
+        translate(x, y);
+        rotate(radians(i * 30));
+        rect(0, -size/1.3, size/4, size/3, 500);
+        popMatrix();
+        pushMatrix();
+        translate(x, y);
+        rotate(radians(i * 30 + 4.5));
+        stroke(255);
+        noFill();
+        strokeWeight(size/10);
+        arc(size/6.666666666666666666, -size/1.3, size/3.8, size/5, 0, radians(180));
+        popMatrix();
+    }
+    rectMode(CORNER);   
+};
+
+var playbtn = function(x, y, size){
+    stroke(255);
+    strokeWeight(size/5);
+    fill(255);
+    strokeJoin(ROUND);
+    beginShape();
+        vertex(x - size/1.3/2, y - size/2);
+        vertex(x - size/1.3/2, y + size/2);
+        vertex(x + size/1.3/2, y);
+    endShape(CLOSE);
+};
+
+var homebtn = function(x, y, size){
+    noStroke();
+    fill(255);
+    rectMode(CENTER);
+    rect(x, y, size, size/1.5);
+    fill(0);
+    rect(x, y + size/6, size/3, size/2.6);
+    rectMode(CORNER);
+    strokeJoin(ROUND);
+    stroke(255);
+    strokeWeight(10);
+    fill(255);
+    beginShape();
+        vertex(x - size/1.5, y - size/3);
+        vertex(x + size/1.5, y - size/3);
+        vertex(x, y - size/1.2);
+    endShape(CLOSE);
+};} // backgrounds and images 
+
+{
+
+var playImg = (function(){
+    playbackgrnd();
+    return get(0, 0, width, height);
+})();
+
+var loadHeads = function(col){
+    noStroke();
+    fill(255, 0);
+    rect(0, 0, width, height);
+    fill(col);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    fill(0);       
+    ellipse(0 + 3 * offset, 0 + 3 * offset, 5, 5);
+    ellipse(0 + 3 * offset, 0 + squareSize - 3 * offset, 5, 5);
+    var filling = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    background(0);
+    fill(255);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset, 2 * offset);
+    var masking = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    if(filling){
+        filling.mask(masking);
+    }
+    var headLeft = filling;
+
+    noStroke();
+    fill(255, 0);
+    rect(0, 0, width, height);
+    fill(col);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    fill(0);   
+    ellipse(0 + squareSize - 3 * offset, 0 + 3 * offset, 5, 5);
+    ellipse(0 + squareSize - 3 * offset, 0 + squareSize - 3 * offset, 5, 5);
+    var filling = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    background(0);
+    fill(255);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset, 2 * offset);
+    var masking = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    if(filling){
+        filling.mask(masking);
+    }
+    var headRight = filling;
+    
+    noStroke();
+    fill(255, 0);
+    rect(0, 0, width, height);
+    fill(col);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    fill(0);   
+    ellipse(0 + 3 * offset, 0 + 3 * offset, 5, 5);
+    ellipse(0 + squareSize - 3 * offset, 0 + 3 * offset, 5, 5);
+    var filling = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    background(0);
+    fill(255);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset, 2 * offset);
+    var masking = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    if(filling){
+        filling.mask(masking);
+    }
+    var headUp = filling;
+
+    noStroke();
+    fill(255, 0);
+    rect(0, 0, width, height);
+    fill(col);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    fill(0);   
+    ellipse(0 + 3 * offset, 0 + squareSize - 3 * offset, 5, 5);
+    ellipse(0 + squareSize - 3 * offset, 0 + squareSize - 3 * offset, 5, 5);
+    var filling = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    background(0);
+    fill(255);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset, 2 * offset);
+    var masking = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    if(filling){
+        filling.mask(masking);
+    }
+    var headDown = filling;
+
+    return {
+        left: headLeft,
+        right: headRight,
+        up: headUp,
+        down: headDown
+    };
+};
+var heads = (function(){
+    var arr = [];
+    for(var i in colors){
+        arr.push(loadHeads(colors[i][0]));
+    }
+    return arr;
+})();
+
+var blueBerry = (function(){
+    background(0, 255, 0);
+    food(200, 200, 20);
+    var color1 = get(190, 190, 20, 20);
+    background(0, 200, 0);
+    food(200, 200, 20);
+    var color0 = get(190, 190, 20, 20);
+    return {
+        dark: color0,
+        light: color1
+    };
+})();
+
+var wall = (function(){
+    noStroke();
+    fill(255, 0);
+    rect(0, 0, width, height);
+    fill(wallColor);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    var filling = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    background(0);
+    fill(255);
+    rect(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset, 2 * offset);
+    var masking = get(offset, offset, squareSize - 2 * offset, squareSize - 2 * offset);
+    if(filling){
+        filling.mask(masking);
+    }
+    var wall = filling;
+    return wall;
+})();
+
+var gear = (function(){
+    background(255, 0);
+    noStroke();
+    fill(255);
+    rect(0, 0, width, height);
+    var filling = get(0, 0, 100, 100);
+    background(0);
+    gear(300, 300, 50);
+    var masking = get(250, 250, 100, 100);
+    if(filling){
+        filling.mask(masking);
+    }
+    return filling;
+})();
+
+var playBtnImg = (function(){
+    background(255, 0);
+    noStroke();
+    fill(255);
+    rect(0, 0, width, height);
+    var filling = get(0, 0, 100, 100);
+    background(0);
+    playbtn(300, 300, 50);
+    var masking = get(250, 250, 100, 100);
+    if(filling){
+        filling.mask(masking);
+    }
+    background(255, 0);
+    noStroke();
+    fill(0);
+    rect(0, 0, width, height);
+    var filling2 = get(0, 0, 100, 100);
+    background(0);
+    playbtn(300, 300, 50);
+    var masking = get(250, 250, 100, 100);
+    if(filling){
+        filling2.mask(masking);
+    }
+    return {
+        dark: filling2,
+        light: filling
+    };
+})();
+
+var homeBtnImg = (function(){
+    background(255, 0);
+    noStroke();
+    fill(255);
+    rect(0, 0, width, height);
+    var filling = get(0, 0, 100, 100);
+    background(0);
+    homebtn(300, 300, 50);
+    var masking = get(250, 250, 100, 100);
+    if(filling){
+        filling.mask(masking);
+    }
+    background(255, 0);
+    noStroke();
+    fill(0);
+    rect(0, 0, width, height);
+    var filling2 = get(0, 0, 100, 100);
+    background(0);
+    homebtn(300, 300, 50);
+    var masking = get(250, 250, 100, 100);
+    if(filling2){
+        filling2.mask(masking);
+    }
+    return {
+        dark: filling2,
+        light: filling
+    };
+})();
+
+background(255);
+fill(0);
+textSize(100);
+text("LOADING", 300, 300);} // load images 
+
+{
+var chooseFoodSpot = function(){
+    var x;
+    var y;
+    var validSpot = false;
+    var fType;
+    var currentLoopNum = 0;
+    var maxLoopNum = squareNum * squareNum;
+    while(!validSpot){
+        currentLoopNum ++;
+        x = round(random(0, squareNum)) * squareSize;
+        y = round(random(0, squareNum)) * squareSize;
+        if(get(x + squareSize/2, y + squareSize/2) === squareColors[0] ){
+            fType = "dark";
+            validSpot = true;
+        } else if(get(x + squareSize/2, y + squareSize/2) === squareColors[1]){
+            fType = "light";
+            validSpot = true;
+            
+        } else { 
+            validSpot = false;
+        }
+        if(modes[currentMode] === "wall"){
+            for (var i = 0; i < walls.length; i++) {
+                if(x === walls[i][0] && y === walls[i][1]){
+                    validSpot = false;
+                }
+            }
+        }
+        if (currentLoopNum >= maxLoopNum){
+            // just so the program dosn't crash when you win.
+            return {
+                x: x,
+                y: y,
+                type: "light",
+            };
+        }
+    }
+    return {
+        x: x,
+        y: y,
+        type: fType,
+    };
+     
+};} // finds a spot to spawn the food (or wall)
+
+{
+
+var Particle = function(position) {
+  this.acceleration = new PVector(0, 0);
+  this.velocity = new PVector(random(-1, 1), random(-1, 1));
+  this.position = position.get();
+  this.timeToLive = 255.0;
+};
+
+Particle.prototype.run = function() {
+  this.update();
+  this.display();
+};
+
+Particle.prototype.update = function(){
+  this.velocity.add(this.acceleration);
+  this.position.add(this.velocity);
+  this.timeToLive -= 5;
+};
+
+Particle.prototype.display = function() {
+  noStroke();
+  fill(0, 0, 255, this.timeToLive/2);
+  ellipse(this.position.x, this.position.y, 6, 6);
+};
+
+Particle.prototype.isDead = function(){
+  return this.timeToLive < 0.0;
+};
+
+var Confetti = function(position) {
+  Particle.call(this, position);
+};
+
+Confetti.prototype = Object.create(Particle.prototype);
+Confetti.prototype.constructor = Confetti;
+
+Confetti.prototype.display = function(){
+  rectMode(CENTER);
+  fill(0, 0, 255, this.timeToLive/2);
+  noStroke();
+  pushMatrix();
+  translate(this.position.x, this.position.y);
+  var theta = map(this.position.x, 0, width, 0, TWO_PI * 2);
+  rotate(theta);
+  rect(0, 0, 6, 6);
+  popMatrix();
+  rectMode(CORNER);
+};
+
+var ParticleSystem = function(position) {
+  this.origin = position.get();
+  this.particles = [];
+};
+
+ParticleSystem.prototype.addParticle = function() {
+  var r = random(1);
+  if (r < 0.25) {
+    this.particles.push(new Particle(new PVector(this.origin.x + random(-10, 10), this.origin.y + random(-10, 10))));
+  } else if (r < 0.50) {
+    this.particles.push(new Confetti(this.origin));
+  }
+};
+
+ParticleSystem.prototype.run = function(){
+    for (var i = this.particles.length-1; i >= 0; i--) {
+    var p = this.particles[i];
+    p.run();
+    if (p.isDead()) {
+      this.particles.splice(i, 1);
+    }
+  }
+};
+
+
+var particleSystem = (function(){
+    var pvec = new PVector(width/2, 134); 
+    return new ParticleSystem(pvec);
+})();} // particle system 
+
+{
+
+var Snake = function(config){
+    this.x = config.x;
+    this.y = config.y;
+    this.size = config.size;
+    this.body = [[this.x + squareSize/2, this.y + squareSize/2]];
+    this.direc = config.direc;
+    this.que = config.que;
+    this.speed = squareSize/config.speed;
+    this.maxLenght = config.maxLenght;
+    this.bodyColor = config.bodyColor;
+    this.rightLength = false;
+    this.oriMaxLength = config.oriMaxLength;
+    this.totalDistSinceFood = 0;
+};
+
+Snake.prototype.draw = function(){
+    strokeWeight(squareSize - offset * 3.5);
+    stroke(this.bodyColor);
+    noFill();
+    strokeJoin(ROUND);
+    beginShape();
+        for (var i = 0; i < this.body.length; i++) {
+            vertex(this.body[i][0], this.body[i][1]);
+        }
+        vertex(this.x + squareSize/2, this.y + squareSize/2);
+    endShape();
+
+    switch(this.direc) {
+        case "left":
+            image(heads[currentHead].left, this.x + offset, this.y + offset);
+            break;
+        case "right":
+            image(heads[currentHead].right, this.x + offset, this.y + offset);
+            break;
+        case "up":
+            image(heads[currentHead].up, this.x + offset, this.y + offset);
+            break;
+        case "down":
+            image(heads[currentHead].down, this.x + offset, this.y + offset);
+            break;
+        default:
+    }
+};
+
+Snake.prototype.canTurn = function(){
+    return this.que.length > 1 && this.x % squareSize === 0 && this.y % squareSize === 0;
+};
+
+Snake.prototype.move = function(){
+    switch(this.direc) {
+        case "left":
+            this.x -= this.speed;
+            break;
+        case "right":
+            this.x += this.speed;
+            break;
+        case "up":
+            this.y -= this.speed;
+            break;
+        case "down":
+            this.y += this.speed;
+            break;
+        default:
+    }
+    this.totalDistSinceFood += this.speed;
+};
+
+Snake.prototype.isDead = function(){
+    switch(this.direc) {
+        case "left":
+            var pixelInFront = get(this.x + offset - 2, this.y + squareSize/2);
+            if(pixelInFront === this.bodyColor || (pixelInFront === wallColor && modes[currentMode] === "wall")){
+                return true;
+            }
+            break;
+        case "right":
+            var pixelInFront = get(this.x + squareSize - offset + 2, this.y + squareSize/2);
+            if(pixelInFront === this.bodyColor || (pixelInFront === wallColor && modes[currentMode] === "wall")){
+                return true;
+            }                    
+            break;
+        case "up":
+            var pixelInFront = get(this.x + squareSize/2, this.y + offset - 2);
+            if(pixelInFront === this.bodyColor || (pixelInFront === wallColor && modes[currentMode] === "wall")){
+                return true;
+            }
+            break;
+        case "down":
+            var pixelInFront = get(this.x + squareSize/2, this.y + squareSize - offset + 2);
+            if(pixelInFront === this.bodyColor || (pixelInFront === wallColor && modes[currentMode] === "wall")){
+                return true;
+            }
+            break;
+        default:
+    }
+
+    if(this.x + offset <= 0 || this.y + offset <= 0 || this.x + this.size - offset >= width || this.y + this.size  - offset >= height){
+        return true;
+    }
+
+    return false;
+};
+
+Snake.prototype.eatFood = function(){
+    
+    this.rightLength = false;
+
+    particleSystem.particles = [];
+    particleSystem.origin.set(foodX + squareSize/2, foodY + squareSize/2);
+    particleSystemRTime = 20;
+    if(this.totalDistSinceFood <= minDistToFood + squareSize){
+        streak ++;
+        score += 1 + streak * streak;
+        this.maxLenght += 1 + streak;
+    } else {
+        score += 1;
+        this.maxLenght += 1;
+        streak = 0;
+    }
+    this.totalDistSinceFood = 0;
+    if(modes[currentMode] === "wall" && canSpawnWall){
+        var wallSpot = chooseFoodSpot();
+        walls.push([wallSpot.x, wallSpot.y]);
+        canSpawnWall = false;            
+    } else if(!canSpawnWall){
+        canSpawnWall = true;
+    }
+    if(modes[currentMode] === "flip"){
+        this.flip();
+    }
+    var foodSpot = chooseFoodSpot();
+    foodX = foodSpot.x;
+    foodY = foodSpot.y;
+    foodType = foodSpot.type;
+    minDistToFood = (abs(foodX - this.x) + abs(foodY - this.y));
+
+    
+};
+
+Snake.prototype.handleBody = function(){
+    var bod = this.body;
+    var x = this.x + squareSize/2;
+    var y = this.y + squareSize/2;
+
+    if(!this.rightLength){
+        if(this.calcLength() >= this.maxLenght){
+            this.rightLength = true;
+        }
+    } else{
+        if(bod.length > 1) {
+            if(bod[0][0] > bod[1][0]){
+                bod[0][0] -= this.speed;
+            } else if(bod[0][0] < bod[1][0]){
+                bod[0][0] += this.speed;
+            } else if(bod[0][1] > bod[1][1]){
+                bod[0][1] -= this.speed;
+            } else if(bod[0][1] < bod[1][1]){
+                bod[0][1] += this.speed;
+            } 
+            if(bod[0][0] - bod[1][0] === 0 && bod[0][1] - bod[1][1] === 0){
+                bod.splice(0, 1);
+            }
+        } else {
+            if(bod[0][0] > x){
+                bod[0][0] -= this.speed;
+            } else if(bod[0][0] < x){
+                bod[0][0] += this.speed;
+            } else if(bod[0][1] < y){
+                bod[0][1] += this.speed;
+            } else if(bod[0][1] > y){
+                bod[0][1] -= this.speed;
+            }
+        }
+        this.body = bod;
+    }
+};
+
+Snake.prototype.flip = function(){
+    var bod = this.body;
+    bod.push([this.x + squareSize/2, this.y + squareSize/2]);
+    this.x = bod[0][0] - squareSize/2;
+    this.y = bod[0][1] - squareSize/2;
+    
+    if(bod.length > 1){
+        if(bod[0][0] > bod[1][0]){
+            this.direc = "right";
+            this.que[0] = "right";
+
+        } else if(bod[0][0] < bod[1][0]){
+            this.direc = "left";
+            this.que[0] = "left";
+        } else if(bod[0][1] > bod[1][1]){
+            this.direc = "down";
+            this.que[0] = "down";
+        } else if(bod[0][1] < bod[1][1]){
+            this.direc = "up";
+            this.que[0] = "up";
+        }
+    } 
+    bod.splice(0, 1);
+    bod.reverse();
+    this.body = bod;
+};
+
+Snake.prototype.update = function(){
+
+    if(this.canTurn()){
+        this.direc = this.que[1];
+        this.que.splice(0, 1);
+        this.body.push([this.x + squareSize/2, this.y + squareSize/2]);     
+    }    
+    
+    this.move();
+
+    if(this.isDead()){
+        scene = "dead";
+        deadScreenFade = 0;
+    }
+
+    if(dist(this.x + squareSize/2, this.y + squareSize/2, foodX + squareSize/2, foodY + squareSize/2) <= 20){
+        this.eatFood();
+    }
+
+    this.handleBody(); 
+};
+
+Snake.prototype.calcLength = function(){
+    var totalLength = 0;
+    var bodLength = this.body.length;
+    if(bodLength > 1){
+        for (var i = 0; i < bodLength - 1; i++) {
+            totalLength += dist(this.body[i][0], this.body[i][1], this.body[i + 1][0], this.body[i+ 1][1]);
+        }
+    }
+    totalLength += dist(this.body[bodLength - 1][0], this.body[bodLength - 1][1], this.x + squareSize/2, this.y + squareSize/2) + squareSize;
+    
+    return totalLength/squareSize;
+};
+// creates player object:
+var player = new Snake({
+    x: squareSize * 5,
+    y: squareSize * 5,
+    size: squareSize - 2 * offset,
+    direc: "right",
+    que: ["right"],
+    speed: speeds[currentSpeed],
+    maxLenght: 3,
+    oriMaxLength: 3,
+    bodyColor: color(255, 255, 50),
+});} // snake object 
+
+{
+
+var Button = function(config){
+    this.x = config.x;
+    this.y = config.y;
+    this.size = config.size;
+    this.text = config.text;
+    this.color = config.color;
+    this.textColor = config.textColor;
+    this.textSize = config.textSize;
+    this.onClick = config.onClick;
+    this.scene = config.scene;
+    this.type = config.type;
+    this.oriSize = config.size;
+    this.textYOffset = config.textYOffset || this.textSize/2;
+    this.img = config.img || false;
+    this.imgSize = config.imgSize || 0;
+    this.imgXOffset = config.imgXOffset || 0;
+    this.imgYOffset = config.imgYOffset || 0;
+    this.rotation = 0;
+    this.maxRotation = config.maxRotation || 45;
+};
+
+Button.prototype.draw = function(){
+    fill(this.color);
+    noStroke();
+    pushMatrix();
+    translate(this.x, this.y);
+    rotate(radians(this.rotation));
+    ellipse(0, 0, this.size, this.size);
+    fill(this.textColor);
+    textSize(this.textSize);
+    if(!this.img){
+        text(this.text, 0, this.textYOffset);
+    } else {
+        image(this.img, this.imgXOffset, this.imgYOffset, this.imgSize, this.imgSize);
+    } 
+    popMatrix();
+};
+
+Button.prototype.mouseOver = function(){
+    return dist(mouseX, mouseY, this.x, this.y) <= this.size/2;
+};
+
+Button.prototype.HMC = function(){
+    if(this.mouseOver() && scene === this.scene){
+        this.onClick(); 
+    }
+};
+
+Button.prototype.spin = function(){
+    if(this.mouseOver()){
+        this.rotation += (this.maxRotation + 2 - this.rotation)/8;
+        if(this.rotation > this.maxRotation){
+            this.rotation = this.maxRotation;
+        }
+    } else {
+        this.rotation -= (this.rotation + 2)/8;
+        if(this.rotation < 0){
+            this.rotation = 0;
+        }
+    }
+};} // button object
+
+{
+var startPlay = function(){
+    walls = [];
+    particleSystem.particles = [];
+    player.x = squareSize * 5;
+    player.y = squareSize * 5;
+    player.direc = "right";
+    player.que = ["right"];
+    player.body = [[squareSize * 5 + squareSize/2, squareSize * 5+ squareSize/2]];
+    scene = "play";
+    player.rightLength = false;
+    score = 0;
+    player.maxLenght = player.oriMaxLength;
+    player.totalDistSinceFood = 0;
+    image(playImg, 0, 0);
+    var foodSpot = chooseFoodSpot();
+    foodX = foodSpot.x;
+    foodY = foodSpot.y;
+    foodType = foodSpot.type;
+    canSpawnWall = true;
+    minDistToFood = 0;
+};} // play setup
+
+{
+var but1 = new Button({
+    x: 230,
+    y: 400,
+    size: 100,
+    text: "play img",
+    color: color(255),
+    textColor: color(0),
+    textSize: 30,
+    img: playBtnImg.dark,
+    imgSize: 100,
+    imgXOffset: -45,
+    imgYOffset: -48,
+    onClick: function(){
+        startPlay();
+    },
+    scene: "dead",
+    type: "circ"
+});
+
+var but2 = new Button({
+    x: 370,
+    y: 400,
+    size: 100,
+    text: "home img",
+    color: color(255),
+    textColor: color(0),
+    textSize: 30,
+    img: homeBtnImg.dark,
+    imgSize: 100,
+    imgYOffset: -40,
+    imgXOffset: -50,
+    onClick: function(){
+        homeButtonsDelay = 30;
+        scene = "home";
+    },
+    scene: "dead",
+    type: "circ"
+});
+
+var but3 = new Button({
+    x: 410,
+    y: 350,
+    size: 100,
+    text: "?",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 80,
+    textYOffset: 30,
+    onClick: function(){
+        if(homeButtonsDelay < 1){
+            howButtonsDelay = 30;
+            scene = "how";
+        }
+        
+    },
+    scene: "home",
+    type: "circ"
+});
+
+var but4 = new Button({
+    x: 300,
+    y: 350,
+    size: 100,
+    text: "play img",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 30,
+    img: playBtnImg.light,
+    imgSize: 100,
+    imgXOffset: -45,
+    imgYOffset: -48,
+    onClick: function(){
+        if(homeButtonsDelay < 1){
+           startPlay(); 
+        }
+        
+    },
+    scene: "home",
+    type: "circ"
+});
+
+var but5 = new Button({
+    x: 210,
+    y: 500,
+    size: 30,
+    text: "-",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 15,
+    textYOffset: 5,
+    onClick: function(){
+        if(homeButtonsDelay < 1){
+            currentSpeed --;
+            if (currentSpeed < 0) {
+                currentSpeed = speeds.length - 1;
+            }
+            player.speed = squareSize/speeds[currentSpeed];
+        }
+        
+    },
+    scene: "home",
+    type: "circ"
+});
+
+var but6 = new Button({
+    x: 390,
+    y: 500,
+    size: 30,
+    text: "+",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 15,
+    textYOffset: 5,
+    onClick: function(){
+        if(homeButtonsDelay < 1){
+            currentSpeed ++;
+            if (currentSpeed >= speeds.length) {
+                currentSpeed = 0;
+            }
+            player.speed = squareSize/speeds[currentSpeed];
+        }
+        
+    },
+    scene: "home",
+    type: "circ",
+});
+
+var but7 = new Button({
+    x: 240,
+    y: 400,
+    size: 100,
+    text: "home img",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 30,
+    img: homeBtnImg.light,
+    imgSize: 100,
+    imgYOffset: -40,
+    imgXOffset: -50,
+    onClick: function(){
+        if(howButtonsDelay < 1){
+            homeButtonsDelay = 30;
+            scene = "home";
+        }
+    },
+    scene: "how",
+    type: "circ"
+});
+
+var but8 = new Button({
+    x: 190,
+    y: 350,
+    size: 100,
+    text: "sett img",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 30,
+    img: gear,
+    imgSize: 70,
+    imgXOffset: -35,
+    imgYOffset: -35,
+    onClick: function(){
+        if(homeButtonsDelay < 1){
+            settingsGameModeX = 300;
+            settingsColorX = 300;
+            settingsSpeedX = 300;
+            settingsButtonsDelay = 30;
+            scene = "settings"; 
+        }
+        
+    },
+    scene: "home",
+    type: "circ"
+});
+
+var but9 = new Button({
+    x: 240,
+    y: 500,
+    size: 100,
+    text: "home img",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 30,
+    img: homeBtnImg.light,
+    imgSize: 100,
+    imgYOffset: -40,
+    imgXOffset: -50,
+    onClick: function(){
+        if(settingsButtonsDelay < 1){
+            homeButtonsDelay = 30;
+            scene = "home";
+        }
+    },
+    scene: "settings",
+    type: "circ"
+});
+
+var but10 = new Button({
+    x: 360,
+    y: 500,
+    size: 100,
+    text: "play img",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 30,
+    img: playBtnImg.light,
+    imgSize: 100,
+    imgXOffset: -45,
+    imgYOffset: -48,
+    onClick: function(){
+        if(settingsButtonsDelay < 0){
+           startPlay(); 
+        }
+        
+    },
+    scene: "settings",
+    type: "circ"
+});
+
+var but11 = new Button({
+    x: 360,
+    y: 400,
+    size: 100,
+    text: "play img",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 30,
+    img: playBtnImg.light,
+    imgSize: 100,
+    imgXOffset: -45,
+    imgYOffset: -48,
+    onClick: function(){
+        if(howButtonsDelay < 0){
+           startPlay(); 
+        }
+        
+    },
+    scene: "how",
+    type: "circ"
+});
+
+var but12 = new Button({
+    x: 210,
+    y: 350,
+    size: 30,
+    text: "-",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 15,
+    textYOffset: 5,
+    onClick: function(){
+        if(settingsButtonsDelay < 1){
+            currentSpeed --;
+            if (currentSpeed < 0) {
+                currentSpeed = speeds.length - 1;
+            }
+            player.speed = squareSize/speeds[currentSpeed];
+        }
+        
+    },
+    scene: "settings",
+    type: "circ"
+});
+
+var but13 = new Button({
+    x: 390,
+    y: 350,
+    size: 30,
+    text: "+",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 15,
+    textYOffset: 5,
+    onClick: function(){
+        if(settingsButtonsDelay < 1){
+            currentSpeed ++;
+            if (currentSpeed >= speeds.length) {
+                currentSpeed = 0;
+            }
+            player.speed = squareSize/speeds[currentSpeed];
+        }
+        
+    },
+    scene: "settings",
+    type: "circ",
+});
+
+var but14 = new Button({
+    x: 210,
+    y: 210,
+    size: 30,
+    text: "-",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 15,
+    textYOffset: 5,
+    onClick: function(){
+        if(settingsButtonsDelay < 1){
+            currentMode --;
+            if (currentMode < 0) {
+                currentMode = modes.length - 1;
+            }
+            
+        }
+        
+    },
+    scene: "settings",
+    type: "circ"
+});
+
+var but15 = new Button({
+    x: 390,
+    y: 210,
+    size: 30,
+    text: "+",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 15,
+    textYOffset: 5,
+    onClick: function(){
+        if(settingsButtonsDelay < 1){
+            currentMode ++;
+            if (currentMode >= modes.length) {
+                currentMode = 0;
+            }
+            
+        }
+        
+    },
+    scene: "settings",
+    type: "circ",
+});
+
+var but16 = new Button({
+    x: 210,
+    y: 280,
+    size: 30,
+    text: "-",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 15,
+    textYOffset: 5,
+    onClick: function(){
+        if(settingsButtonsDelay < 1){
+            currentHead --;
+            if (currentHead < 0) {
+                currentHead = heads.length - 1;
+            }
+            player.bodyColor = colors[currentHead][1];
+        }
+        
+    },
+    scene: "settings",
+    type: "circ"
+});
+
+var but17 = new Button({
+    x: 390,
+    y: 280,
+    size: 30,
+    text: "+",
+    color: color(colblue),
+    textColor: color(255),
+    textSize: 15,
+    textYOffset: 5,
+    onClick: function(){
+        if(settingsButtonsDelay < 1){
+            currentHead ++;
+            if (currentHead >= heads.length) {
+                currentHead = 0;
+            }
+            player.bodyColor = colors[currentHead][1];
+        }
+        
+    },
+    scene: "settings",
+    type: "circ",
+});
+
+
+var buttons = [but1, but2, but3, but4, but5, but6, but7, but8, but9, but10, but11, but12, but13, but14, but15, but16, but17];} // buttons
+
+{
+
+var home = function(){
+    homebackgrnd();
+    homeButtonsDelay --;
+    fill(0);
+    textSize(40);
+    text("speed:", 300, 460);
+    textSize(25);
+    text(speedNames[currentSpeed], 300, 507);
+    fill(0, 50);
+    noStroke();
+    rect(210, 485, 180, 30);
+    but3.spin();
+    but4.spin();
+    but8.spin();
+    but3.draw();
+    but4.draw();
+    but5.draw();
+    but6.draw();
+    but8.draw();
+    
+};
+
+
+var play = function(){
+    player.update();
+    image(playImg, 0, 0, width, height);
+    if (modes[currentMode] === "wall"){
+        for (var i = 0; i < walls.length; i++) {
+            image(wall, walls[i][0] + offset, walls[i][1] + offset, squareSize - 2 * offset, squareSize - 2 * offset);
+        }
+    }
+    player.draw();
+    
+    
+    
+
+    if(foodType === "dark"){
+        image(blueBerry.dark, foodX + 10, foodY + 10, 20, 20);
+    } else {
+        image(blueBerry.light, foodX + 10, foodY + 10, 20, 20);
+    }
+    if(particleSystemRTime > 0){
+        particleSystem.addParticle();
+    }
+    if(particleSystemRTime > -51){
+        particleSystemRTime --;
+        particleSystem.run();
+    } else {
+        particleSystem.particles = [];
+    }
+    fill(0);
+    textSize(20);
+    textAlign(LEFT, BOTTOM);
+    text("score: " + score, width/60, 30);
+    if(showFPS){
+        textAlign(RIGHT, BOTTOM);
+        text("FPS: " + round((frameCount - startFrames)/((millis() -startMillis)/1000)), width - width/60, 30);
+        textAlign(CENTER);
+        if(millis() - startMillis > 500){
+            startMillis = millis();
+            startFrames = frameCount;
+        }  
+    }
+};
+
+var dead = function(){
+    if(score > highScore){
+        highScore = score;
+    }
+    deadbackgrnd();
+    deadScreenFade++;
+    fill(255);
+    textSize(width/10);
+    text("YOU DIED", width/2, height/3);
+    textSize(width/30);
+    text("Score: " + score, width/2, height/2.3);
+    text("High: " + highScore, width/2, height/2);
+    but1.draw();
+    but2.draw();
+    but1.spin();
+    but2.spin();
+};
+
+var how = function(){
+    background(255);
+    howButtonsDelay --;
+    fill(colblue);
+    textSize(60);
+    text("HOW", 300, 100);
+    fill(0);
+    textSize(30);
+    text("Arrow keys or swipe to change direction, \n eat the blueberry, don't eat yourself, \n and don't hit the walls", 300, 200);
+    but7.draw();
+    but11.draw();
+    but7.spin();
+    but11.spin();
+};
+
+var settings = function(){
+    background(255);
+    settingsButtonsDelay --;
+    fill(0);
+    textSize(100);
+    text("Settings", 300, 110);
+    stroke(0);
+    strokeWeight(6);
+    line(-20, 150, 620, 150);
+    textSize(30);
+    settingsGameModeX -= (settingsGameModeX - 100)/8;
+    settingsColorX -= (settingsColorX - 70)/8;
+    settingsSpeedX -= (settingsSpeedX - 70)/8;
+    fill(0, 50);
+    noStroke();
+    rect(settingsSpeedX * -3 - 310, 317, 1200, 66);
+    rect(settingsColorX * -4 - 310, 247, 1500, 66);
+    rect(settingsGameModeX * -4 - 310, 177, 1500, 66);
+    fill(255);
+    rect(but12.x, but12.y - but12.size/2, 180, 30);
+    rect(but14.x, but14.y - but14.size/2, 140, 30);
+    fill(0);
+    text("game mode", settingsGameModeX, 220);
+    text(modes[currentMode], settingsGameModeX * 3, 220);
+    text("color", settingsColorX, 290);
+    noFill();
+    strokeJoin(ROUND);
+    strokeWeight(squareSize - offset * 3.5);
+    stroke(colors[currentHead][1]);
+    line(settingsColorX * (300/70) - 20, 280, settingsColorX * (300/70) + 50, 280);
+    fill(colors[currentHead][0]);
+    noStroke();
+    rect(settingsColorX * (300/70) - 50, 260 + offset, 40 - offset * 2, 40 - offset * 2, 10);
+    fill(0);
+    ellipse(settingsColorX * (300/70) - 40, 267 + offset, 5, 5);
+    ellipse(settingsColorX * (300/70) - 40, 293 - offset, 5, 5);
+    text("speed", settingsSpeedX, 360);
+    text(speedNames[currentSpeed], settingsSpeedX * (300/70), 360);
+    but12.x = settingsSpeedX * (300/70) - 90;
+    but13.x = settingsSpeedX * (300/70) + 90;
+    but14.x = settingsGameModeX * 3 - 70;
+    but15.x = settingsGameModeX * 3 + 70;
+    
+    but9.draw();
+    but10.draw();
+    but12.draw();
+    but13.draw();
+    but14.draw();
+    but15.draw();
+    but16.draw();
+    but17.draw();
+    but9.spin();
+    but10.spin();
+};} // scenes
+
+{
+    
+keyPressed = function(){
+    if(player.que.length <= 3){
+        switch(keyCode){
+            case UP:
+                if(player.que[0] !== "up" && player.que[0] !== "down"){
+                    player.que.push("up");
+                }
+                break;
+            case LEFT:
+                if(player.que[0] !== "left" && player.que[0] !== "right"){
+                    player.que.push("left");                        
+                }
+                break;
+            case RIGHT:
+                if(player.que[0] !== "left" && player.que[0] !== "right"){
+                    player.que.push("right");
+                }
+                break;
+            case DOWN:
+                if(player.que[0] !== "up" && player.que[0] !== "down"){
+                   player.que.push("down"); 
+                }
+                break;
+        }
+        switch(key.toString()){
+            case "w":
+                if(player.que[player.que.length - 1] !== "up" && player.que[player.que.length - 1] !== "down"){
+                    player.que.push("up");
+                }
+                break;
+            case "a":
+                if(player.que[player.que.length - 1] !== "left" && player.que[player.que.length - 1] !== "right"){
+                    player.que.push("left");                        
+                }
+                break;
+            case "d":
+                if(player.que[player.que.length - 1] !== "left" && player.que[player.que.length - 1] !== "right"){
+                    player.que.push("right");
+                }
+                break;
+            case "s":
+                if(player.que[player.que.length - 1] !== "up" && player.que[player.que.length - 1] !== "down"){
+                   player.que.push("down"); 
+                }
+                break;
+
+        }
+    }
+};
+
+mousePressed = function(){
+    
+    startMouseX = mouseX;               
+    startMouseY = mouseY;
+};
+
+mouseReleased = function(){
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].HMC();
+    }
+    if(dist(mouseX, mouseY, startMouseX, startMouseY) > 20){
+        var xDiff = max(mouseX, startMouseX) - min(mouseX, startMouseX);
+        var yDiff = max(mouseY, startMouseY) - min(mouseY, startMouseY);
+        if (xDiff > yDiff){
+            if (mouseX > startMouseX){
+                if(player.que[player.que.length - 1] !== "left" && player.que[player.que.length - 1] !== "right"){
+                    player.que.push("right");
+                }
+
+            } else {
+                if(player.que[player.que.length - 1] !== "left" && player.que[player.que.length - 1] !== "right"){
+                    player.que.push("left");
+                }
+
+            }
+        } else if (xDiff < yDiff){
+            if (mouseY > startMouseY){
+                if(player.que[player.que.length - 1] !== "up" && player.que[player.que.length - 1] !== "down"){                                  
+                    player.que.push("down"); 
+                }
+
+            } else {
+                if(player.que[player.que.length - 1] !== "up" && player.que[player.que.length - 1] !== "down"){                                 player.que.push("up");
+                }
+
+            }
+        }
+    }
+};} // user input
+
+{
+var draw = function(){ 
+    switch(scene){
+        case "play":
+            play();
+            break;
+        case "dead":
+            dead();
+            break;
+        case "home":
+            home();
+            break;
+        case "how":
+            how();
+            break;
+        case "settings":
+            settings();
+            break;
+    }
+};}// draw function
+
+}};
+
+  // Get the canvas that ProcessingJS will use
+  var canvas = document.getElementById("mycanvas"); 
+  // Pass the function to ProcessingJS constructor
+  var processingInstance = new Processing(canvas, programCode); 
+
+
+  </script>
+</html>
