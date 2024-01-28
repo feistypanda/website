@@ -1,19 +1,30 @@
 <!DOCTYPE html>
 <html> 
     <head>
-        <title>Twini Putt</title> 
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@800&display=swap" rel="stylesheet"> 
         <style type="text/css">
-            #canvasp {
-                position: relative;
-                top: 150px
+            #logo {
+                width: 100px;
+            }
+
+            h1 {
+                font-size: 100px;
+                text-align: center;
+                font-family: dosis, sans-serif;
+                color: green;
             }
         </style>
+        <title>Twini-Putt</title> 
     </head>
     <body>
-        <p style="text-align:center" id="canvasp">
-            <canvas id="mycanvas" align="center"></canvas> 
+        <a href="../index.html"><img src="../logo.png" id="logo"></a>
+        <p align="center"> 
+            <canvas id="mycanvas"></canvas> 
         </p>
     </body>
+ 
  
     <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
 
