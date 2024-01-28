@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <title>Twini Putt</title> 
+        <style type="text/css">
+            #canvasp {
+                position: relative;
+                top: 150px
+            }
+        </style>
+    </head>
+    <body>
+        <p style="text-align:center" id="canvasp">
+            <canvas id="mycanvas" align="center"></canvas> 
+        </p>
+    </body>
+ 
+    <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
+
+    <script>
+        var programCode = function(processingInstance) {
+            with (processingInstance) {
+
+ 
+
+{
+size(600, 600, P2D);
+angleMode = "radians"; // radians are supperior ad you will never convince me otherwise
+smooth();
+frameRate(60);
+textAlign(CENTER);
+var ARIAL_BLACK = createFont("arial black");
+var ARIAL = createFont("arial");} // setup
+
+{
+var ballColor = color(255); // the color of the balls
+var ballStroke = color(0, 0, 0); // stroke color of the balls
+var ballStrokeWeight = 3; // the stroke weight of the balls
+var obstacleStrokeWeight = 3;
+var ballSize = 10; // the size of the balls
+var ballR = ballSize/2;
+var bounciness = -0.8; // how much speed balls retain when bouncing
+var holePos = []; // the hole positions for the current level
+var numHoles = 0; // the total number of balls that are in a hole
+var holeSize = 15; // the size of the holes
+var topBarHeight = 30; // the height of the top bar
+var strokes = 0;
+var curRestarts = 0;
+var golfBalls;
+var showHitBoxes = false;
+var scene = "home";
+var par;
+var transImg;
+var totalScore = 0;
+var mouseDown = false;
+var levelSelectVars = {
+    timeIn: 0,
+    target: 0,
+    offSet: 0,
+};
+var canLaunch = false;
+} // vars
+
+var levelInd = 13; // indicates which level from the level array should be displayed
+var levelsPlayed = levelInd;
+//{
+function p(x, y) {
+    return {x: x, y: y};
+} // makes my code shorter
+
+function createLine(x1, y1, x2, y2){
+    return {x1: x1, y1: y1, x2: x2, y2: y2};
+} // returns object with an x1, y1, x2, and y2
+
+function distSq(x1, y1, x2, y2) {
+    return sq(x2 - x1) + sq(y2 - y1);
+} // a faster way to do circle-circle collisions
+
+function drawLine(line1){
+    line(line1.x1, line1.y1, line1.x2, line1.y2);
+} // mostly for debugging
+
+function printLineStats(line){
+    println("x1: " + line.x1);
+    println("y1: " + line.y1);
+    println("x2: " + line.x2);
+    println("y2: " + line.y2);
+} // this is solely for debugging
+
+function rotPoint(point, rect1, a){
+
+    var distToRect = dist(point.x, point.y, rect1.position.x + rect1.width/2, rect1.position.y + rect1.height/2);
+    var ang = atan2(point.y - (rect1.position.y + rect1.height/2), point.x - (rect1.position.x + rect1.width/2));
+    var nx, ny;
+    if (a === 0) {
+        nx = rect1.position.x + rect1.width/2 + cos(ang + rect1.rotation) * distToRect;
+        ny = rect1.position.y + rect1.height/2 + sin(ang + rect1.rotation) * distToRect;
+    } else {
+        nx = (rect1.position.x + rect1.width/2) + cos(ang - rect1.rotation) * distToRect;
+        ny = (rect1.position.y + rect1.height/2) + sin(ang - rect1.rotation) * distToRect; 
+    }
+    return p(nx, ny);
+} // rotates a point around the center of a rect
+
+function closestPointOnRect(rect, circ, rot) {
+    if (rect.rotation === 0 || rot) {
+        var nx = constrain(circ.position.x, rect.position.x, rect.position.x + rect.width);
+        var ny = constrain(circ.position.y, rect.position.y, rect.position.y + rect.height);
+        return p(nx, ny);
+    } else {
+        var point = {x: circ.position.x, y: circ.position.y};
+        var np = rotPoint(point, rect);
+        np.r = circ.r;
+        np.position = p(np.x, np.y);
+
+        return rotPoint(closestPointOnRect(rect, np, true), rect, 0);
+    }  
+}
+
+function rectCirc(rect, circ) {
+    var point = closestPointOnRect(rect, circ, true);
+    var nx = point.x;
+    var ny = point.y;
+    return distSq(nx, ny, circ.position.x, circ.position.y) < sq(circ.r);
+}
+
+function findSign(n) {
+    
+    if (n === 0){
+        return 0;
+    }
+
+    return abs(n)/n;
+} // finds sign of n. returns -1, 1, or 0
+
+function lineToCirc(line, circ) {
+    var distToCirc = dist(line.x1, line.y1, circ.position.x, circ.position.y);
+    var lineCircAngle = atan2(circ.position.y - line.y1, circ.position.x - line.x1);
+    var newX = line.x1 + cos(lineCircAngle - line.angle) * distToCirc;
+    var newY = line.y1 + sin(lineCircAngle - line.angle) * distToCirc;
+    var newLine = createLine(line.x1, line.y1, line.x1 + line.mag, line.y1);
+    var constX = constrain(newX, newLine.x1, newLine.x2);
+    if (distSq(constX, newLine.y1, newX, newY) < sq(circ.r + line.strokeWeight/2)){
+        return true;
+    }
+    return false;
+} // sees if a line is colliding with a circle
+
+function createRectSide(rect1, side, bulge) {
+    var point1;
+    var point2;
+    //bulge = 0;
+    switch (side) {
+        case "top":
+            point1 = {x: rect1.position.x - bulge, y: rect1.position.y - bulge};
+            point2 = {x: rect1.position.x + rect1.width + bulge, y: rect1.position.y - bulge};
+            break;
+        case "left":
+            point1 = {x: rect1.position.x - bulge, y: rect1.position.y - bulge};
+            point2 = {x: rect1.position.x - bulge, y: rect1.position.y + rect1.height + bulge};
+            break;
+        case "right":
+            point1 = {x: rect1.position.x + rect1.width + bulge, y: rect1.position.y - bulge};
+            point2 = {x: rect1.position.x + rect1.width + bulge, y: rect1.position.y + rect1.height + bulge};
+            break;
+        case "bottom":
+            point1 = {x: rect1.position.x - bulge, y: rect1.position.y + rect1.height + bulge};
+            point2 = {x: rect1.position.x + rect1.width + bulge, y: rect1.position.y + rect1.height + bulge};
+            break;
+    }
+    
+    var p1 = rect1.rotation === 0 ? point1 : rotPoint(point1, rect1, 0);
+    var p2 = rect1.rotation === 0 ? point2 : rotPoint(point2, rect1, 0);
+    return createLine(p1.x, p1.y, p2.x, p2.y);
+} // creates a line coresponding to the side of a rotated rectangle
+
+function rotColl(circ, rect1) {
+    var point = {x: circ.position.x, y: circ.position.y};
+    var np = rotPoint(point, rect1);
+    np.r = circ.r;
+    np.position = p(np.x, np.y);
+    return rectCirc(rect1, np);
+} // circ to rotated rectangle collision detection
+
+function lineAng(line) {
+    return atan2(line.y2 - line.y1, line.x2 - line.x1);
+}//} some functions
+
+{
+var levels = [
+{
+    strt1: {x: 150, y: 500, origin: "left"},
+    strt2: {x: 450, y: 500, origin: "right"},
+    obstacles: [{x: 100, y: 300, width: 355, height: 20, type: "wall", rotation: radians(100), rectAlign: "center"}, {x: 200, y: 300, width: 355, height: 20, type: "wall", rotation: radians(80), rectAlign: "center"}, {x: 150, y: 130, width: 60, height: 20, type: "wall", rotation: radians(0), rectAlign: "center"}, {x: 400, y: 300, width: 355, height: 20, type: "wall", rotation: radians(100), rectAlign: "center"}, {x: 500, y: 300, width: 355, height: 20, type: "wall", rotation: radians(80), rectAlign: "center"}, {x: 450, y: 130, width: 60, height: 20, type: "wall", rotation: radians(0), rectAlign: "center"},],
+    holes: [{x: 150, y: 150}, {x: 450, y: 150}],
+    par: 2,
+},{
+    strt1: {x: 150, y: 500, origin: "left"},
+    strt2: {x: 450, y: 100, origin: "right"},
+    obstacles: [{x: 50, y: 290, width: 246, height:20, type: "wall", }, {x: 400, y: 290, width: 199, height:20, type: "wall", },],
+    holes: [{x: 150, y: 100}, {x: 450, y: 500}],
+    par: 3,
+},{
+    strt1: {x: 150, y: 500, origin: "left"},
+    strt2: {x: 450, y: 500, origin: "right"},
+    obstacles: [{x: 1, y: 180, width: 240, height: 280, type: "hill", direc: new PVector(0.5, 0), }, {x: 359, y: 180, width: 240, height: 280, type: "hill", direc: new PVector(-0.5, 0), }, {x: 1, y: 100, width: 296, height:20, type: "wall", }, {x: 303, y: 100, width: 296, height:20, type: "wall", }],
+    holes: [{x: 150, y: 150}, {x: 450, y: 150}],
+    par: 4,
+},{
+    strt1: {x: 150, y: 500, origin: "left"},
+    strt2: {x: 450, y: 570, origin: "right"},
+    obstacles: [
+        {x: 90, y: 100, width: 20, height: 350, type: "wall"},
+        {x: 190, y: 100, width: 20, height: 350, type: "wall"},
+        {x: 110, y: 200, width: 80, height: 250, type: "hill", direc: new PVector(0, 0.1)},
+    ],
+    holes: [{x: 150, y: 150}, {x: 450, y: 520}],
+    par: 2,
+},{
+    strt1: {x: 150, y: 500, origin: "left"},
+    strt2: {x: 450, y: 200, origin: "right"},
+    obstacles: [
+        {x: 1, y: 1, width: 99, height: 329, type: "water", }, 
+        {x: 200, y: 1, width: 96, height: 329, type: "water",}, 
+        {x: 1, y: 333, width: 99, height: 20, type: "wall", }, 
+        {x: 200, y: 333, width: 96, height: 20, type: "wall", }, 
+        {x: 304, y: 1, width: 395, height: 100, type: "water", },
+        {width: 100, height: 20, type: "move", shape: "rect", targets: [p(100, 50), p(100, 570)], speed: 1.5, }, 
+        {x: 0, y: 575, width: 300, height: 30, type: "water",}, 
+        {x: 470, y: 230, width: 400, height: 40, type: "hill", direc: new PVector(0.1, 0)}, 
+        {x: 480, y: 270, width: 80, height: 15, type: "wall"}, 
+        {x: 545, y: 271, width: 15, height: 300, type: "wall"}, 
+        {x: 560, y: 230, width: 40, height: 300, type: "hill", direc: new PVector(0, 0.2)}, 
+    ],
+    holes: [{x: 150, y: 100}, {x: 450, y: 400}],
+    par: 2,
+},{
+    strt1: {x: 150, y: 500, origin: "left"},
+    strt2: {x: 450, y: 500, origin: "right"},
+    obstacles: [{x1: 200, y1: 350, x2: 400, y2: 350, strokeWeight: 50, type: "water", shape: "line"}, {x1: -100, y1: 250, x2: 150, y2: 250, strokeWeight: 50, type: "sand", shape: "line"}, {x1: 400, y1: -500, x2: 400, y2: 250, strokeWeight: 50, type: "water", shape: "line"}, {x1: 500, y1: 100, x2: 500, y2: 250, strokeWeight: 50, type: "water", shape: "line"}, {x: 195, y: 53, width: 80, height: 230, type: "hill", direc: new PVector(0, -0.5), }, {x: 1, y: 200, width: 190, height: 10, type: "wall", }, {x: 570, y: -10, width: 99, height: 100, type: "water", }],
+    holes: [{x: 150, y: 150}, {x: 550, y: 150}],
+    par: 7,
+},{
+    strt1: {x: 150, y: 500, origin: "left"},
+    strt2: {x: 450, y: 500, origin: "right"},
+    obstacles: [{x: 0, y: 150, r: 60, type: "wall", shape: "circ"}, {x: 600, y: 150, r: 60, type: "wall", shape: "circ"}, {x: 300, y: 150, r: 60, type: "wall", shape: "circ"}, {x: 150, y: 350, r: 60, type: "wall", shape: "circ"}, {x: 450, y: 350, r: 60, type: "wall", shape: "circ"}, {x1: -500, y1: 100, x2: 350, y2: 850, strokeWeight: 200, type: "water", shape: "line"}, {x1: 1100, y1: 100, x2: 250, y2: 850, strokeWeight: 200, type: "water", shape: "line"}],
+    holes: [{x: 150, y: 150}, {x: 450, y: 150}],
+    par: 2,
+},{
+    strt1: {x: 150, y: 500, origin: "left"},
+    strt2: {x: 450, y: 500, origin: "right"},
+    obstacles: [   
+        {x1: 0, y1: 400, x2: 100, y2: 300, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 300, y1: 400, x2: 200, y2: 300, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 300, y1: 400, x2: 400, y2: 300, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 600, y1: 400, x2: 500, y2: 300, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 300, y1: 400, x2: 300, y2: 650, shape: "line", type: "sand", strokeWeight: 40,},
+        {r: 40, type: "move", shape: "circ", targets: [p(450, 290), p(350, 290),], speed: 1},
+        {r: 40, type: "move", shape: "circ", targets: [p(50, 290), p(150, 290),], speed: 1},
+    ],
+    holes: [{x: 150, y: 150}, {x: 450, y: 150}],
+    par: 3,
+},{
+    strt1: {x: 150, y: 200, origin: "left"},
+    strt2: {x: 450, y: 500, origin: "right"},
+    obstacles: [
+        {x: 170, y: 120, width: 200, height: 20, type: "wall", rotation: radians(45), rectAlign: "center"},
+        {x: 170, y: 420, width: 200, height: 20, type: "wall", rotation: radians(-45), rectAlign: "center"},
+        {x1: 280, y1: 170, x2: 280, y2: 400, shape: "line", type: "water", strokeWeight: 40,},
+        {x1: 320, y1: 470, x2: 480, y2: 600, shape: "line", type: "sand", strokeWeight: 40,},
+
+    ],
+    holes: [{x: 50, y: 300}, {x: 450, y: 170}],
+    par: 2,
+},{
+    strt1: {x: 150, y: 300, origin: "left"},
+    strt2: {x: 450, y: 300, origin: "right"},
+    obstacles: [   
+        {x: 170, y: 420, width: 335, height: 20, type: "wall", rotation: radians(45), rectAlign: "center"},
+        {x: 450, y: 480, width: 30, height: 20, type: "wall", rectAlign: "center"},
+        {x: 430, y: 510, width: 40, height: 80, type: "hill", direc: new PVector(0, -0.1)},
+        {x: 350, y: 600, r: 50, type: "water", shape: "circ"},
+        {x: 470, y: 540,  width: 140, height: 20, type: "wall"},
+        {x: 470, y: 500, width: 200, height: 40, type: "hill", direc: new PVector(-0.05, 0)},
+        {x: 0, y: 30, width: 290, height: 20, type: "sand"},
+    ],
+    holes: [{x: 150, y: 500}, {x: 450, y: 500}],
+    par: 3,
+},{
+    strt1: {x: 100, y: 380, origin: "left"},
+    strt2: {x: 450, y: 500, origin: "right"},
+    obstacles: [   
+        {x1: 140, y1: 350, x2: 160, y2: 350, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 440, y1: 350, x2: 460, y2: 350, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 140, y1: 250, x2: 160, y2: 250, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 440, y1: 250, x2: 600, y2: 250, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 440, y1: 250, x2: 300, y2: 350, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 160, y1: 250, x2: 300, y2: 350, shape: "line", type: "wall", strokeWeight: 40,},
+        {x: 0, y: 200, width: 120, height: 160, type: "hill", direc: new PVector(0, -0.5)},
+        {r: 50, type: "move", shape: "circ", targets: [p(150, 320), p(450, 320),], speed: 0.5},
+        {x1: 580, y1: 620, x2: 620, y2: 580, shape: "line", type: "water", strokeWeight: 40,},
+    ],
+    holes: [{x: 150, y: 300}, {x: 450, y: 300}],
+    par: 3,
+},{
+    strt1: {x: 150, y: 200, origin: "left"},
+    strt2: {x: 450, y: 400, origin: "right"},
+    obstacles: [
+        {x1: 600, y1: 200, x2: 420, y2: 200, shape: "line", type: "wall", strokeWeight: 40,},
+        {x1: 0, y1: 400, x2: 180, y2: 400, shape: "line", type: "water", strokeWeight: 40,},
+        {x1: 0, y1: 360, x2: 180, y2: 360, shape: "line", type: "sand", strokeWeight: 40,},
+    ],
+    holes: [{x: 150, y: 500}, {x: 450, y: 150}],
+    par: 4,
+}
+]; /* contains the level data for all of the levels*/} // da leeveeels
+
+(function() {
+    for (var i in levels) {
+        levels[i].score = "N/A"
+        levels[i].restarts = 0;
+    }
+})();
+
+//{
+function calcSlope(line) {
+    return (line.y2 - line.y1) / (line.x2 - line.x1);
+} // returns the slope of a line
+
+function calcIntercept(line, slope) {
+    var x = line.x1;
+    var y = line.y1;
+    return y - slope * x;
+} // returns intercept (b in mx + b = y)
+
+function isPointOnLine(line, point) {
+    if(point.x >= min(line.x1, line.x2) && point.x <= max(line.x1, line.x2) && point.y >= min(line.y1, line.y2) && point.y <= max(line.y1, line.y2)){
+        return true;
+    }
+    return false;
+} // finds if a point is on a line
+
+function prepLine(line) {
+    if(line.x1 === line.x2){
+        return {x: line.x1, vertical: true, x1: line.x1,  y1: line.y1,  x2: line.x2,  y2: line.y2};
+    }
+    var m = calcSlope(line);
+    return {m: m, b: calcIntercept(line, m), x1: line.x1,  y1: line.y1,  x2: line.x2,  y2: line.y2};
+} // takes a line object and injects slope, intercept, and a vertical-ness boolean
+
+function findIntersection(line1, line2) {
+    line1 = prepLine(line1);
+    line2 = prepLine(line2);
+  if (line1.vertical && line2.vertical) {
+    // Both lines are vertical, no intersection
+    return {inter: false};
+  } else if (line1.vertical) {
+    // Line 1 is vertical, calculate intersection with Line 2
+    var x = line1.x;
+    var y = line2.m * x + line2.b;
+    return {x: x, y: y, inter: isPointOnLine(line1, {x: x, y: y}, line1.m) && isPointOnLine(line2, {x: x, y: y}, line2.m)};
+  } else if (line2.vertical) {
+    // Line 2 is vertical, calculate intersection with Line 1
+    var x = line2.x;
+    var y = line1.m * x + line1.b;
+    return {x: x, y: y, inter: isPointOnLine(line1, {x: x, y: y}, line1.m) && isPointOnLine(line2, {x: x, y: y}, line2.m)};
+  } else {
+    // Both lines are non-vertical, calculate intersection
+    var x = (line2.b - line1.b) / (line1.m - line2.m);
+    var y = line1.m * x + line1.b;
+    return {x: x, y: y, inter: isPointOnLine(line1, {x: x, y: y}, line1.m) && isPointOnLine(line2, {x: x, y: y}, line2.m)};
+  }
+}//finds the intersection point of two lines, assuming the lines go infinitely in both directions} // line intersection shtuff
+
+//{
+var Particle = function(position, type) {
+    this.acceleration = new PVector(0, 0);
+    this.position = position.get();
+    this.timeToLive = 100.0;
+    this.type = type;
+    switch (this.type) {
+        case "splash":
+            this.velocity = new PVector(0, 0);
+            break;
+        case "grass":
+            this.velocity = new PVector(random(-0.5, 0.5), random(-0.5, 0.5));
+            break;
+    }
+};
+
+Particle.prototype.display = function() {
+    switch(this.type) {
+        case "splash":
+            noFill();
+            stroke(255, (this.timeToLive - 50) * 2);
+            strokeWeight(1);
+            ellipse(this.position.x, this.position.y, (100 - this.timeToLive) * 2, (100 - this.timeToLive) * 2);
+            break;
+        case "grass":
+            rectMode(CENTER);
+            fill(0, 100, 0, this.timeToLive/1.5);
+            noStroke();
+            pushMatrix();
+            translate(this.position.x, this.position.y);
+            var theta = map(this.position.x, 0, width, 0, TWO_PI * 2);
+            rotate(theta);
+            rect(0, 0, 8, 8);
+            popMatrix();
+            rectMode(CORNER);
+    }
+};
+
+Particle.prototype.update = function() {
+    this.position.add(this.velocity);
+    this.timeToLive --;
+};
+
+Particle.prototype.run = function() {
+    this.update();
+    this.display();
+};
+
+var ParticleSystem = function(x, y, type, delay, numParticles, ballNum) {
+    this.position = new PVector(x, y);
+    this.type = type;
+    this.particles = [];
+    this.delay = delay;
+    this.curDelay = 0;
+    this.time = 0;
+    this.numParticles = numParticles;
+    this.golfBall = ballNum || 0;
+    this.numParticlesMade = 0;
+};
+
+ParticleSystem.prototype.addParticle = function() {
+    this.particles.push(new Particle(this.position, this.type));
+};
+
+ParticleSystem.prototype.run = function() {
+
+    switch (this.type) {   
+        case "grass":
+            var b = golfBalls.balls[this.golfBall];
+            if (this.curDelay >= this.delay && this.numParticlesMade < this.numParticles && !b.relaunch && !b.hitHole) {
+                this.addParticle();
+                this.numParticlesMade ++;
+            }
+
+            this.position.set(b.position.x, b.position.y);
+            var vel = b.velocity.get();
+            this.delay = 25 - vel.mag()* 3;
+            break;
+        default:
+
+            if (this.curDelay >= this.delay && this.numParticlesMade < this.numParticles) {
+                this.addParticle();
+                this.numParticlesMade ++;
+            }
+    }
+    
+    if (this.curDelay > this.delay) {
+        this.curDelay = 0;
+    }
+    for (var i = this.particles.length - 1; i >= 0; i--) {
+        this.particles[i].run();
+        if (this.particles[i].timeToLive <= 0){
+            this.particles.splice(i, 1);
+        }
+    }
+
+    this.curDelay ++;  
+}; 
+
+var ParticleSystems = function() {
+    this.particleSystems = [];
+};
+
+ParticleSystems.prototype.add = function(x, y, type, delay, numParticles, ballNum) {
+    this.particleSystems.push(new ParticleSystem(x, y, type, delay, numParticles, ballNum));
+};
+
+ParticleSystems.prototype.run = function() {
+    for (var i = this.particleSystems.length - 1; i >= 0; i--) {
+        this.particleSystems[i].run();
+        if (this.particleSystems[i].particles.length <= 0 && this.particleSystems[i].numParticlesMade > this.particleSystems[i].numParticles) {
+            this.particleSystems.splice(i, 1);
+        }
+    }
+};
+
+var gameParticles = new ParticleSystems();//} particles =P
+
+//{
+function Obstacle(config) {
+
+    this.shape = config.shape === undefined ? "rect" : config.shape;
+    this.type = config.type;
+
+    if (this.shape === "rect") {
+        this.createSides = function () {
+            this.sides = [createRectSide(this, "top", ballR), createRectSide(this, "bottom", ballR), createRectSide(this, "left", ballR), createRectSide(this, "right", ballR)];
+        };
+        this.position = this.type === "move" ? new PVector(config.targets[0].x, config.targets[0].y) : new PVector(config.x, config.y);
+        this.width = config.width;
+        this.height = config.height;
+        this.rotation = config.rotation || 0;
+        this.createSides();
+    } else if (this.shape === "line") {
+        this.x1 = config.x1;
+        this.x2 = config.x2;
+        this.y1 = config.y1;
+        this.y2 = config.y2;
+        this.strokeWeight = config.strokeWeight;
+        this.mag = dist(this.x1, this.y1, this.x2, this.y2);
+        this.angle = lineAng(this);
+    } else if (this.shape === "circ") {
+        this.position = this.type === "move" ? new PVector(config.targets[0].x, config.targets[0].y) : new PVector(config.x, config.y);
+        this.r = config.r;
+    }
+
+    if (this.type === "move"){ // if its a moving block
+        this.targets = config.targets; // where the moving blocks will go to
+        this.curTarget = 1; // the target that it should be moving towards if its a moving block
+        this.angle = atan2(this.targets[1].y - this.targets[0].y, this.targets[1].x - this.targets[0].x);
+        this.speed = config.speed; // speed for moving blocks
+    }
+
+    if (this.type === "hill" ) {
+        if (this.width % 40 !== 0) {
+            this.width += this.width % 40;          
+        }
+        if (this.height % 40 !== 0) {
+            this.height += this.height % 40;
+        }
+        this.direc = config.direc; // this is the direction of the hill
+    }
+    // the colors
+    switch (this.type) {
+    case "wall":
+        this.color1 = color(230, 192, 41);
+        this.color2 = color(153, 130, 55);
+        break;
+    case "water":
+        this.color1 = color(70, 70, 255);
+        this.color2 = color(100, 100, 255);
+        break;
+    case "sand":
+        this.color1 = color(227, 211, 132);
+        this.color2 = color(181, 159, 79);
+        break;
+    case "move":
+        this.color1 = color(230, 192, 41);
+        this.color2 = color(153, 130, 55);
+        break;
+    }
+}
+
+Obstacle.prototype.draw = function(col, offSet) {
+    var pos;
+    if (this.shape === "rect" || this.shape === "circ") {
+        pos = this.position.get();
+    }
+    function wall () {
+        fill(230, 192, 41);
+            stroke(153, 130, 55);
+            strokeWeight(obstacleStrokeWeight);
+            if(showHitBoxes) {
+                for(var i in this.sides) {
+                    drawLine(this.sides[i]);
+                }  
+            }
+           
+            if (this.shape === "rect") {
+                pushMatrix();
+                translate(pos.x + this.width/2, pos.y + this.height/2);
+                rotate(this.rotation);
+                rect(-this.width/2 + obstacleStrokeWeight/2, -this.height/2 + obstacleStrokeWeight/2, this.width - obstacleStrokeWeight, this.height - obstacleStrokeWeight);
+                popMatrix();
+            } else if (this.shape === "circ") {
+                ellipse(pos.x, pos.y, this.r * 2 - obstacleStrokeWeight/2, this.r * 2 - obstacleStrokeWeight/2);
+            } else if (this.shape === "line") {
+                stroke(153, 130, 55);
+                strokeWeight(this.strokeWeight);
+                drawLine(this);
+                stroke(230, 192, 41);
+                strokeWeight(this.strokeWeight - obstacleStrokeWeight*2);
+                drawLine(this);
+            }
+    }
+    if (col === undefined) {
+        switch(this.type){
+        case "wall":
+            wall();
+            break;
+        case "hill":
+                       
+            noFill();
+            stroke(42, 164, 0);
+            strokeWeight(obstacleStrokeWeight);
+            rect(pos.x, pos.y, this.width, this.height, 2);
+            strokeJoin(ROUND);
+            if(this.direc.x === 0 && this.direc.y !== 0){
+                var s = findSign(this.direc.y);
+                for (var i = 0; i <= this.width/40 - 1; i ++) {
+                    beginShape();
+                        vertex(this.position.x + i * 40 + 12, (this.position.y + this.height/2) - (this.height/2 * s) + 6 * s);
+                        vertex(this.position.x + i * 40 + 20, (this.position.y + this.height/2) + (this.height/2 * s) - 6 * s);
+                        vertex(this.position.x + i * 40 + 28, (this.position.y + this.height/2) - (this.height/2 * s) + 6 * s);
+                    endShape();
+                }
+                
+            } else if(this.direc.y === 0 && this.direc.x !== 0){
+                var s = findSign(this.direc.x);
+                for (var i = 0; i <= this.height/40 - 1; i ++) {
+                    beginShape();
+                        vertex((this.position.x + this.width/2) - (this.width/2 * s) + 6 * s, this.position.y + i * 40 + 12);
+                        vertex((this.position.x + this.width/2) + (this.width/2 * s) - 6 * s, this.position.y + i * 40 + 20);
+                        vertex((this.position.x + this.width/2) - (this.width/2 * s) + 6 * s, this.position.y + i * 40 + 34);
+                    endShape();
+                }
+            }
+            break;
+        case "move":
+            wall();
+            break;
+        case "water":
+            fill(70, 70, 255);
+            stroke(100, 100, 255);
+            strokeWeight(3);
+            if (this.shape === "rect") {
+                rect(pos.x, pos.y, this.width, this.height, 2);    
+            } else if (this.shape === "line") {
+                stroke(100, 100, 255);
+                strokeWeight(this.strokeWeight + 6);
+                drawLine(this);
+                stroke(70, 70, 255);
+                strokeWeight(this.strokeWeight);
+                drawLine(this);
+            } else if (this.shape === "circ") {
+                ellipse(pos.x, pos.y, this.r * 2, this.r * 2);
+            }
+            break;
+        case "sand":
+            fill(227, 211, 132);
+            stroke(181, 159, 79);
+            strokeWeight(3);
+            if (this.shape === "rect") {
+                rect(pos.x, pos.y, this.width, this.height, 2);    
+            } else if (this.shape === "line") {
+                stroke(181, 159, 79);
+                strokeWeight(this.strokeWeight + 6);
+                drawLine(this);
+                stroke(227, 211, 132);
+                strokeWeight(this.strokeWeight);
+                drawLine(this);
+            } else if (this.shape === "circ") {
+                ellipse(pos.x, pos.y, this.r * 2, this.r * 2);
+            }
+            break;
+        default:
+            break;
+        }
+    } else {
+        switch (this.shape) {
+        case "rect":
+            var w = this.width;
+            var h = this.height;
+            pushMatrix();
+            translate(pos.x + w/2, pos.y + h/2);
+            rotate(this.rotation);
+            noStroke();
+            fill(col);
+            rect(-w/2 + offSet/2, -h/2 + offSet/2, w - offSet, h - offSet);
+            popMatrix();
+            break;
+        case "line":
+            stroke(col);
+            strokeWeight(this.strokeWeight - offSet);
+            drawLine(this);
+            break;
+        case "circ":
+            noStroke();
+            fill(col);
+            ellipse(pos.x, pos.y, this.r * 2 - offSet, this.r * 2 - offSet);
+            break;
+        default:
+            throw {mesage: "you did something wrong and its all your fault"};
+        }
+    }
+};
+
+Obstacle.prototype.update = function() {
+    if (this.type === "move") {
+        if (distSq(this.position.x, this.position.y, this.targets[this.curTarget].x, this.targets[this.curTarget].y) < sq(this.speed)) {
+            
+            this.position.x = this.targets[this.curTarget].x;
+            this.position.y = this.targets[this.curTarget].y;
+
+            this.curTarget ++;
+            if (this.curTarget >= this.targets.length) {
+                this.curTarget = 0;
+                this.angle = atan2(this.targets[this.curTarget].y - this.targets[this.targets.length - 1].y, this.targets[this.curTarget].x - this.targets[this.targets.length - 1].x);
+            } else {
+                this.angle = atan2(this.targets[this.curTarget].y - this.targets[this.curTarget - 1].y, this.targets[this.curTarget].x - this.targets[this.curTarget - 1].x);
+            }
+        } else {
+            this.position.x += cos(this.angle) * this.speed;
+            this.position.y += sin(this.angle) * this.speed;
+        }
+        if (this.shape === "rect") {
+            this.createSides();
+        }
+        
+    }
+};
+
+Obstacle.prototype.run = function() {
+    this.update();
+    this.draw(this.color2, 0);
+    this.draw(this.color1, 6);
+    //this.draw();
+};
+
+var ObstacleSystem = function(){
+    this.obstacles = [];
+};
+
+ObstacleSystem.prototype.run = function() {
+    for (var i in this.obstacles){
+        this.obstacles[i].update();
+        this.obstacles[i].draw(this.obstacles[i].color2, 0);
+    }
+    for (var i in this.obstacles){
+        this.obstacles[i].draw(this.obstacles[i].color1, 6);
+    }
+};
+
+var obstacles = new ObstacleSystem(); // obstacles in the current level } // obstacles
+
+{
+var GolfBall = function(config){
+    this.position = new PVector(config.x, config.y);
+    this.startPosition = this.position.get();
+    this.velocity = new PVector(0, 0, 0);
+    this.acceleration = new PVector(0, 0, 0);
+    this.mass = 3;
+    this.size = config.size;
+    this.r = this.size/2;
+    this.originSide = config.originSide;
+    this.relaunch = false;
+    this.show = true;
+    this.inHole = false; // when to go to the next level
+    this.hitHole = false; // when to start the animation
+    this.canStop = true;
+    this.inWater = false;
+    this.waterResetDelay = 30;
+    this.pastX = this.position.x;
+    this.pastY = this.position.y;
+};
+
+GolfBall.prototype.draw = function() {
+    stroke(ballStroke);
+    strokeWeight(ballStrokeWeight);
+    fill(ballColor);
+    var pos = this.position;
+    ellipse(pos.x, pos.y, this.size - ballStrokeWeight/2, this.size - ballStrokeWeight/2);
+};
+
+GolfBall.prototype.applyForce = function(force){
+    var f = PVector.div(force, this.mass);
+    this.acceleration.add(f);
+};
+
+GolfBall.prototype.isColliding = function(obstacle){
+    
+    var bPos = this.position;
+    var oPos = obstacle.position;
+    var o = obstacle;
+    var r = this.r;
+    if (o.shape === "rect") {
+        return o.rotation === 0 ? rectCirc(o, this) : rotColl(this, o);
+    } else if (o.shape === "line") {
+        return lineToCirc(o, this);
+    } else if (o.shape === "circ") {
+        return distSq(bPos.x, bPos.y, oPos.x, oPos.y) < sq(r + o.r);
+    }
+    return false;
+};
+
+GolfBall.prototype.lineBounce = function(o) {
+
+    // find variables necessary to find the closest spot on the line to the ball
+    var lineMag = o.mag;
+    var distToCirc = dist(o.x1, o.y1, this.position.x, this.position.y);
+    var lineAngle = o.angle;
+    var lineCircAngle = atan2(this.position.y - o.y1, this.position.x - o.x1);
+
+    // create a new x position for the ball, rotated back along the lines angle
+    var newX = o.x1 + cos(lineCircAngle - lineAngle) * distToCirc;
+
+    // find the closest spot on the rotated line to the new x
+    var constX = constrain(newX, o.x1, o.x1 + lineMag);
+
+    // find the distance from that point to the x1 of the line
+    var constD = constX - o.x1;
+
+    // calculate the closest position on the unmodified line
+    newX = o.x1 + cos(lineAngle) * constD;
+    var newY = o.y1 + sin(lineAngle) * constD;
+
+    // create the circle for the ball to bounce off of
+    var ball = {position: new PVector(newX, newY), r: o.strokeWeight/2, type: o.type};
+
+    // bounce the ball of of the circle
+    this.circBounce(ball);
+};
+
+GolfBall.prototype.circBounce = function(o) {
+    // calculate the minimum translation distance to move the balls apart
+    var delta = PVector.sub(this.position, o.position);
+    var d = delta.mag();
+    var mtd = PVector.mult(delta, ((this.r + o.r)-d)/d);
+
+    // calculate the masses. obstacle mass is infinity so that it dosent move
+    var im1 = 1 / this.size; 
+    var im2 = 1 / Infinity;
+
+    // move the ball out of the obstacle
+    this.position.add(PVector.mult(mtd, im1 / (im1 + im2)));
+
+    // find the velocity of the impact
+    var v;
+    if (o.type === "wall") {
+        v = this.velocity;
+    } else if (o.type === "move") {
+        v = PVector.sub(this.velocity, new PVector(cos(o.angle) * o.speed, sin(o.angle) * o.speed));
+    }
+
+    // calculate the direction of impact
+    mtd.normalize();
+    var vn = PVector.dot(v, mtd);
+
+    // the balls are already moving away from eachother
+    if (vn > 0) {return;}
+
+    // calculate the impulse
+    var i = (-(1 - bounciness) * vn) / (im1 + im2);
+    var impulse = PVector.mult(mtd, i);
+
+    // add the velocities
+    this.velocity.add(PVector.mult(impulse, im1));
+};
+
+GolfBall.prototype.move = function() {
+
+    // move the golf ball
+    this.velocity.add(this.acceleration);
+    this.velocity.mult(0.985);
+    this.position.add(this.velocity);
+    this.acceleration.mult(0);
+}; 
+
+GolfBall.prototype.edgeBounce = function() {
+
+    var r = this.r; // for easier access
+
+    // bounce off of the edges of the screen
+    if(this.position.x - r < 0){
+        this.position.x = r;
+        this.velocity.x *= bounciness;
+    } else if(this.position.x + r > width){
+        this.position.x = width - r;
+        this.velocity.x *= bounciness;
+    }  else if(this.position.y - r < topBarHeight){
+        this.position.y = r + topBarHeight;
+        this.velocity.y *= bounciness;
+    }  else if(this.position.y + r > height){
+        this.position.y = height - r;
+        this.velocity.y *= bounciness;
+    } 
+
+    // bounce off of the middle line
+    switch(this.originSide){
+        case "left":
+            if(this.position.x + r + 2.5 > width/2){
+                this.position.x = width/2 - r - 2.5;
+                this.velocity.x *= bounciness;
+            }
+            break;
+        case "right":
+            if(this.position.x - r - 2.5 < width/2){
+                this.position.x = width/2 + r + 2.5;
+                this.velocity.x *= bounciness;
+            }
+            break;
+    }
+};
+
+GolfBall.prototype.createMovmentLine = function(o) {
+
+    noStroke();
+    fill(255, 0, 0);
+    
+    stroke(255, 0, 0);
+    strokeWeight(1);
+    var movementVec;
+    movementVec = new PVector((this.position.x - this.pastX), (this.position.y - this.pastY));
+    if (o.type === "move") {
+        movementVec.add(new PVector(cos(o.angle) * o.speed, sin(o.angle) * o.speed));
+    }
+    // prevent the movement vector getting really small at low velocities
+    movementVec.normalize();
+    var normMoveVec = movementVec.get();
+    movementVec.mult(width + height);
+
+    // create the movement line from the movment vector
+    var movementLine = {x1: this.position.x + normMoveVec.x * this.r, y1: this.position.y + normMoveVec.y * this.r, x2: this.position.x - movementVec.x, y2: this.position.y - movementVec.y};
+   
+    return movementLine;
+};
+
+GolfBall.prototype.findCollSide = function(sides, movementLine) {
+    var intersect;
+    var smallestDist = Infinity; // keeps track of the shortest distance from intersection to line
+    var smallestDistPos = {}; // position of closest intersection
+    var smallestDistInd = -1; // line that is being intersected
+
+    // check intersections for all sides of the rect, find the intersection point closest to the ball
+    for (var i in sides) {
+        intersect = findIntersection(sides[i], movementLine); // find the itersection between the movement line ans
+        if (intersect.inter) {
+            var d = distSq(this.position.x, this.position.y, intersect.x, intersect.y);
+            if (d < smallestDist) {
+                smallestDist = d;
+                smallestDistPos = {x: intersect.x, y: intersect.y};
+                smallestDistInd = i;
+            }
+        }
+    } 
+
+    // no intersection, return false
+    if (smallestDistInd < 0) {
+        return false;
+    }
+
+    return {ind: smallestDistInd, pos: smallestDistPos};
+};
+
+GolfBall.prototype.noRotRectBounce = function(o) {
+
+    /* setup */
+    var pos = o.position;
+    var movementLine = this.createMovmentLine(o);
+    stroke(0);
+    strokeWeight(5);
+    // define the angles to bounce off at in an array
+    var bounceAngles = [p(1, bounciness), p(1, bounciness), p(bounciness, 1), p(bounciness, 1)];
+    // put all of the sides in an array
+    var sides = o.sides;
+
+    /* actually bounce the ball */
+    var s = this.findCollSide(sides, movementLine);
+
+    // go to the intersection point
+    this.position.x = s.pos.x;
+    this.position.y = s.pos.y;
+
+    // change the velocity according to the bounce
+    this.velocity.x *= bounceAngles[s.ind].x;
+    this.velocity.y *= bounceAngles[s.ind].y;
+
+    if (o.type === "move") {
+        this.relaunch = false;
+    }
+};
+
+GolfBall.prototype.rotRectBounce = function(o) {
+
+    /* setup */
+    var pos = o.position;
+    var movementVec;
+    var r = this.r;
+
+    // this will be used to dreate the movment line
+    var movementLine = this.createMovmentLine(o);
+
+    // put all of the sides in an array
+    var sides = o.sides;
+
+    // find the intersection point between the lines and the velocity vector
+    var s = this.findCollSide(sides, movementLine);
+
+    this.position.set(s.pos.x, s.pos.y);
+
+    var side = sides[s.ind];
+    var ang1 = lineAng(side);
+    var ang2 = lineAng(movementLine);
+    var theta = ang2 - ang1;
+    ang1 += PI;
+    ang1 -= theta;
+    var mag = this.velocity.mag() * -bounciness;
+    this.velocity.x = cos(ang1) * mag;
+    this.velocity.y = sin(ang1) * mag;
+};
+
+GolfBall.prototype.obstacleBounce = function() {
+
+    // loop through all of the obstacles
+    for(var i in obstacles.obstacles){ 
+
+        var col = this.isColliding(obstacles.obstacles[i]); // is the ball coliding with the obstacle?
+        var o = obstacles.obstacles[i]; // to easily access properties of the obstacle
+        var pos = o.position; // to easily access the position of the obstacle
+        // if its colliding
+
+        if (col) {
+            if (o.type === "wall" || o.type === "move") {
+
+                if (o.shape === "rect") {
+                    if (o.rotation === 0) {
+                        this.noRotRectBounce(o);
+                    } else {
+                        this.rotRectBounce(o);
+                    }
+                } else if (o.shape === "circ") {
+
+                    // bounce off of a circle wall
+                    this.circBounce(o);
+                } else if (o.shape === "line") {
+
+                    // bounce off of a line wall
+                    this.lineBounce(o);
+                }
+                
+            } else if (o.type === "hill") {
+                this.applyForce(o.direc);
+                this.canStop = false; // so that it doesn't go into a hill and then stop
+            } else if (o.type === "water") {
+                this.inWater = true;
+            } else if (o.type === "sand") {
+                this.velocity.mult(0.6);
+            }
+        }
+    }
+};
+
+GolfBall.prototype.update = function() {
+    this.pastX = this.position.x;
+    this.pastY = this.position.y;
+
+    this.move();
+
+    var r = this.r;
+
+    if(this.canStop && distSq(0, 0, this.velocity.x, this.velocity.y) <= sq(0.3)){ 
+        this.velocity.set(0, 0, 0);
+        this.relaunch = true;
+    } else {
+        this.relaunch = false;
+    } // stop the ball if its going slow enough
+    
+    for(var i = 0; i < 2; i++){
+        var d = distSq(this.position.x, this.position.y, holePos[i].x, holePos[i].y);
+        if(d <= sq(this.size/2 + holeSize/2)){
+            var ogVelocity = this.velocity.mag();
+            if (d <= sq(holeSize/2 - r) && ogVelocity < 6) {
+                this.relaunch = false;
+                this.show = false;
+                this.hitHole = true;
+            } else {
+                this.applyForce(new PVector((holePos[i].x - this.position.x)/14, (holePos[i].y - this.position.y)/14));
+                this.velocity.limit(ogVelocity);
+            }            
+        }
+    } // check if the ball is in a hole, and apply gravitational forces twoards the hole if the ball is close enough
+
+    this.edgeBounce(); // bounce off of the edges of the screen and keep the ball on its side
+    
+    this.canStop = true; // will be set to false later if needed
+
+    this.obstacleBounce();
+};
+
+var BallSystem = function(){
+    this.balls = [];
+}; // handles all of the golf balls
+
+BallSystem.prototype.run = function(){
+    for (var i = this.balls.length - 1; i >= 0; i--) {
+        if(this.balls[i].show){
+            this.balls[i].update();
+            this.balls[i].draw();
+            if (this.balls[i].relaunch) { // draw the doted aim thing
+                noStroke();
+                fill(0, 100);
+                if(mouseX <= width/2){
+                    for(var j = 10; j <= 100; j += 10){
+                        ellipse(lerp(this.balls[i].position.x, mouseX - (this.balls[0].position.x - this.balls[i].position.x), j/100), lerp(this.balls[i].position.y, mouseY  - (this.balls[0].position.y - this.balls[i].position.y), j/100), (100 - j)/10, (100 - j)/10);
+                    }
+                } else if(mouseX > 300){
+                    for(var j = 10; j <= 100; j += 10){
+                        ellipse(lerp(this.balls[i].position.x, mouseX - (this.balls[1].position.x - this.balls[i].position.x), j/100), lerp(this.balls[i].position.y, mouseY  - (this.balls[1].position.y - this.balls[i].position.y), j/100), (100 - j)/10, (100 - j)/10);
+                    }
+                }
+            }
+        } else if (this.balls[i].hitHole){
+            this.balls[i].size -= 0.1;
+            if (this.balls[i].size <= 0 && !this.balls[i].inHole) {
+                numHoles ++;
+                this.balls[i].inHole = true;
+            } else {
+                this.balls[i].draw();    
+            }
+            
+        }
+        if (this.balls[i].inWater) {
+            if (this.balls[i].show) {
+                var v = this.balls[i].velocity.get();
+                v.mult(2);
+                gameParticles.add(this.balls[i].position.x + v.x, this.balls[i].position.y + v.y, "splash", 10, 3);
+            }
+            this.balls[i].show = false;
+            this.balls[i].waterResetDelay --;
+            if (this.balls[i].waterResetDelay <= 0) {
+                this.balls[i].waterResetDelay = 30;
+                this.balls[i].show = true;
+                this.balls[i].inWater = false;
+                this.balls[i].position.set(this.balls[i].startPosition);
+                this.balls[i].velocity.mult(0);
+            }
+            
+        }
+             
+    }
+};
+
+BallSystem.prototype.launch = function(){ // launch the balls
+
+    var strokesIncreased = false; // prevents the strokes being increased by two
+    
+    for (var i = this.balls.length - 1; i >= 0; i--) {
+        if(this.balls[i].relaunch){ // only launch if the balls are allowed to
+
+            var distance; // distance between mouse and the golf ball, but in a PVector
+
+            if(mouseX <= 300){
+                distance = new PVector(mouseX - (this.balls[0].position.x - this.balls[i].position.x) - this.balls[i].position.x, mouseY  - (this.balls[0].position.y - this.balls[i].position.y) - this.balls[i].position.y);
+            } else if (mouseX > 300){
+                distance = new PVector(mouseX - (this.balls[1].position.x - this.balls[i].position.x) - this.balls[i].position.x, mouseY  - (this.balls[1].position.y - this.balls[i].position.y) - this.balls[i].position.y);
+            }
+
+            distance.div(-8); // negative so the balls go away from the mouse
+            this.balls[i].applyForce(distance); // apply the force of the launch
+            this.balls[i].relaunch = false; // after you launch, set the relaunch to false so it cant launch again until the ball stops
+
+            if (!strokesIncreased) {
+                strokes ++; // increase the strokes variable
+                strokesIncreased = true; // prevents the strokes being increased by two
+            }
+        }
+    }
+};
+
+var golfBalls = new BallSystem(); /* balls in the current level*/} // the golf balls
+
+{
+
+var Button = function(config){
+    this.x = config.x;
+    this.y = config.y;
+    this.width = config.width;
+    this.height = config.height;
+    this.text = config.text;
+    this.color = config.color;
+    this.stroke = config.stroke;
+    this.textColor = config.textColor;
+    this.textSize = config.textSize;
+    this.onClick = config.onClick;
+    this.scene = config.scene;
+    this.textYOffset = config.textYOffset || this.textSize/2;
+    this.delay = 10;
+    this.canDraw = config.canDraw || function() {return true;};
+};
+
+Button.prototype.update = function () {
+    if (scene === this.scene) {
+        this.delay --;
+    } else {
+        this.delay = 10;
+    }
+};
+
+Button.prototype.draw = function(){
+    if (this.canDraw()){
+    pushMatrix();
+    translate(this.x + this.width/2, this.y + this.height/2);
+    if (this.mouseOver()){
+        scale(1.1);
+    }
+    fill(this.color);
+    stroke(this.stroke);
+    strokeWeight(3);
+    rect(-this.width/2, -this.height/2, this.width, this.height, 4);
+    fill(this.textColor);
+    textFont(ARIAL_BLACK);
+    textSize(this.textSize);
+    text(this.text, 0, this.textYOffset );
+    popMatrix();
+    }
+};
+
+Button.prototype.mouseOver = function(){
+    return mouseX > this.x && mouseY > this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+};
+
+Button.prototype.HMC = function(){
+    if(this.mouseOver() && scene === this.scene && this.delay < 1){
+        this.onClick(); 
+    }
+};} // button object
+
+{
+var fillLevel =  function(){ // takes the info from the level array, and then puts it into the global variables for the current level
+    
+    // clear the arrays
+    golfBalls.balls = [];
+    obstacles.obstacles = [];
+    gameParticles.particleSystems = [];
+
+    // add the golf balls for the current level
+    golfBalls.balls.push(new GolfBall({
+        x: levels[levelInd].strt1.x,
+        y: levels[levelInd].strt1.y,
+        size: ballSize,
+        originSide: levels[levelInd].strt1.origin,
+    }));
+    gameParticles.add(levels[levelInd].strt1.x, levels[levelInd].strt1.y, "grass", 5, Infinity, 0);
+
+    golfBalls.balls.push(new GolfBall({
+        x: levels[levelInd].strt2.x,
+        y: levels[levelInd].strt2.y,
+        size: ballSize,
+        originSide: levels[levelInd].strt2.origin,
+    }));
+
+    gameParticles.add(levels[levelInd].strt2.x, levels[levelInd].strt2.y, "grass", 5, Infinity, 1);
+
+    // add the obstacles for the current level
+    for(var i = 0; i < levels[levelInd].obstacles.length; i++){
+        var curObs = levels[levelInd].obstacles[i];
+        var x = curObs.x,
+            y = curObs.y;
+        if (curObs.rectAlign === "center") {
+            x -= curObs.width/2;
+            y -= curObs.height/2;
+        }
+
+        obstacles.obstacles.push(new Obstacle({
+            x: x,
+            y: y,
+            width: curObs.width,
+            height: curObs.height,
+            type: curObs.type,
+            direc: curObs.direc,
+            targets: curObs.targets,
+            speed: curObs.speed,
+            x1: curObs.x1,
+            x2: curObs.x2,
+            y1: curObs.y1,
+            y2: curObs.y2,
+            strokeWeight: curObs.strokeWeight,
+            shape: curObs.shape,
+            r: curObs.r,
+            rotation: curObs.rotation,
+
+        }));
+    }
+
+    holePos = levels[levelInd].holes; // hole positions for the current level
+    numHoles = 0; // the number of holes made
+    
+    strokes = 0; // the number of strokes taken
+
+    par = levels[levelInd].par; // the par
+};} // set up the level
+{
+var btn1 = new Button({
+    x: 195, 
+    y: 250,
+    width: 210, 
+    height: 70,
+    text: "play", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "home", 
+    textYOffset: 15, 
+    onClick: function () {
+        scene = "play";  
+        if (levelInd >= levels.length) {
+            scene = "win";
+        } else {
+            levelInd = levelsPlayed; fillLevel();
+        }
+    },
+});
+var btn2 = new Button({
+    x: 200, 
+    y: 290, 
+    width: 200, 
+    height: 70,
+    text: "next", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "transition", 
+    textYOffset: 15, 
+    onClick: function () {
+        if (levelInd === levels.length - 1) {
+            scene = "win"; 
+            return;
+        } else{
+            levelInd++; 
+            scene = "play";
+            fillLevel(); 
+            transImg = null;
+        }
+    },
+});
+var btn3 = new Button({
+    x: 200, 
+    y: 390, 
+    width: 200, 
+    height: 70,
+    text: "home", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "transition", 
+    textYOffset: 15, 
+    onClick: function () {
+        scene = "home"; 
+        levelInd++; 
+        transImg = null;
+    },
+});
+var btn4 = new Button({
+    x: 195, 
+    y: 350, 
+    width: 210, 
+    height: 70,
+    text: "levels", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "home", 
+    textYOffset: 19, 
+    onClick: function () {
+        scene = "levelSelect";
+    },
+});
+var btn5 = new Button({
+    x: 200, 
+    y: 250, 
+    width: 200, 
+    height: 70,
+    text: "home", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "win", 
+    textYOffset: 15, 
+    onClick: function () {
+        scene = "home"; 
+        levelInd++; 
+        transImg = null;
+    },
+});
+var btn6 = new Button({
+    x: 200,
+    y: 350, 
+    width: 200, 
+    height: 70,
+    text: "levels", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "win", 
+    textYOffset: 19, onClick: function () {
+        scene = "levelSelect";
+    },
+});
+var btn7 = new Button({
+    x: 200, 
+    y: 500, 
+    width: 200, 
+    height: 70,
+    text: "home", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "levelSelect", 
+    textYOffset: 19, onClick: function () {
+        scene = "home";
+    },
+});
+var btn8 = new Button({
+    x: 195, 
+    y: 450, 
+    width: 210, 
+    height: 70,
+    text: "how", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "home", 
+    textYOffset: 19, 
+    onClick: function () {
+        scene = "how";
+    },
+});
+var btn9 = new Button({
+    x: 200, 
+    y: 500, 
+    width: 200, 
+    height: 70,
+    text: "home",
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "how", 
+    textYOffset: 19,
+    onClick: function () {
+        scene = "home";
+    },
+});
+var btn10 = new Button({
+    x: 460, 
+    y: 450, 
+    width: 120, 
+    height: 50,
+    text: "→", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "levelSelect", 
+    textYOffset: 15, 
+    onClick: function () {
+        if ((levelSelectVars.target/600 + 1) * 10 < levels.length) {
+            levelSelectVars.target += 600;
+        }
+        
+    },
+    canDraw: function () {
+        return (levelSelectVars.target/600 + 1) * 10 < levels.length;
+    }
+});
+var btn11 = new Button({
+    x: 20, 
+    y: 450, 
+    width: 120, 
+    height: 50,
+    text: "←", 
+    color: color(230, 192, 41), 
+    textColor: color(153, 130, 55, 200),
+    stroke: color(153, 130, 55), 
+    textSize: 60, 
+    scene: "levelSelect", 
+    textYOffset: 15, 
+    onClick: function () {
+        if (levelSelectVars.target >= 600) {
+            levelSelectVars.target -= 600;
+        }
+    },
+    canDraw: function () {
+        return levelSelectVars.target >= 600;
+    }
+});
+
+var buttons = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11];
+}
+var clacTotalScore = function () {
+    totalScore = 0;
+    for (var i = 0; i < levels.length; i++) {
+        if (levels[i].score !== "N/A") {
+            totalScore += levels[i].score;
+        }
+    }
+};
+//{
+function play() {
+    if (levelsPlayed < levelInd) {
+        levelsPlayed = levelInd;
+    }
+    textFont(ARIAL);
+    background(92, 204, 12);
+
+    // the holes
+    fill(0);
+    noStroke();
+    for(var i in holePos){
+        ellipse(holePos[i].x, holePos[i].y, 15, 15);
+    }
+    
+    // the obstacles
+    obstacles.run();
+    
+    // that line in the middle
+    stroke(0);
+    strokeWeight(5);
+    line(width/2, -10, width/2, height + 10);
+
+    // the top bar
+    noStroke();
+    fill(0, 135, 0);
+    rect(-10, -10, width + 20, topBarHeight + 10);
+    fill(255);
+    textSize(20);
+    textAlign(RIGHT, TOP);
+    text("level: " + (levelInd + 1) + "  par: " + par + "  strokes: " + strokes + "  restarts: " + curRestarts, width - 5, 3);
+    textAlign(CENTER);
+    
+    // run everything else  
+    golfBalls.run();
+    gameParticles.run();
+
+    // go to the next level if necessary
+    if(numHoles >= 2){
+        if (levelsPlayed < levelInd + 1) {
+            levelsPlayed = levelInd + 1;
+        }
+        levels[levelInd].score = strokes - par;
+        levels[levelInd].restarts = curRestarts;
+        curRestarts = 0;
+        scene = "transition";
+    }
+};
+function home() {
+    textFont(ARIAL_BLACK);
+    background(92, 204, 12);
+    fill(0, 100);
+    textSize(98);
+    text("Twini Putt", 305, 135);
+    fill(255);
+    text("Twini Putt", 300, 130);
+    textFont(ARIAL);
+    textSize(30);
+    totalScore = 0;
+    clacTotalScore();
+    text("Score: " + (totalScore), 300, 200);
+    btn1.draw();
+    btn4.draw();
+    btn8.draw();
+}
+function how() {
+    textFont(ARIAL_BLACK);
+    background(92, 204, 12);
+    fill(0, 100);
+    textSize(98);
+    text("How", 305, 135);
+    fill(255);
+    text("How", 300, 130);
+    textFont(ARIAL);
+    textSize(30);
+    text("Basically mini-putt, but with a twist...\nThere are two balls!\nonce you get both balls in a hole\n you can advance to the next level.\nWhen you hit one ball,\n the other goes in the same direction.\n Try to get the lowest score you can.\nPress \"R\" to restart the level", 300, 200);
+    btn9.draw();
+}
+function transition() {
+    if (!transImg) {
+        transImg = get();
+        clacTotalScore();
+    }
+    image(transImg, 0, 0);
+    stroke(92, 204, 12);
+    strokeWeight(7);
+    line(300, 103, 300, 497);
+    fill(100, 100);
+    stroke(0);
+    strokeWeight(3);
+    rect(100, 100, 400, 400, 20);
+    fill(255);
+    
+    textFont(ARIAL);
+    textSize(30);
+    
+    text("score: " + (levels[levelInd].score), 300, 220);
+    text("restarts: " + levels[levelInd].restarts, 300, 180);
+    text("total score: " + (totalScore), 300, 260);
+    btn2.draw();
+    btn3.draw();
+    noStroke();
+    fill(0, 135, 0);
+    rect(0, 0, 100, 30);
+}
+function win() {
+    textFont(ARIAL_BLACK);
+    background(92, 204, 12);
+    fill(0, 100);
+    textSize(98);
+    text("You won!", 305, 135);
+    fill(255);
+    text("You won!", 300, 130);
+    textFont(ARIAL);
+    textSize(30);
+    text("your score is: " + totalScore, 300, 200);
+    btn5.draw();
+    btn6.draw();
+}
+function levelSelect() {
+    textFont(ARIAL_BLACK);
+    background(92, 204, 12);
+    fill(0, 100);
+    textSize(68);
+    text("Level Select", 305, 125);
+    fill(255);
+    text("Level Select", 300, 120);
+    var v = levelSelectVars;
+    v.timeIn ++;
+    var start = v.offSet;
+    v.offSet = lerp(v.offSet, v.target + (findSign(v.target - v.offSet)*5), 0.2);
+    v.offSet = constrain(v.offSet, Math.min(start, v.target), Math.max(start, v.target));
+    
+    var w = 85;
+    var h = 110;
+
+    var j = 0;
+    for (var k = 1; k <= levels.length; k++) {
+        for(var i = 1; i <= levels.length; i++) {
+            for (j = 1; j <= levels.length; j++) {
+                
+                var x = (j*100 - 40) + (k-1) * 600 - levelSelectVars.offSet;
+                var y = 60 + i*125;
+                var num = (j + (i - 1)* 5 - 1) + (k - 1) * 10 + 1;
+                pushMatrix();
+                translate(x + w/2, y + h/2);
+                if (mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h) {
+                    scale(1.1);
+                    if (mouseDown && levelSelectVars.timeIn > 10 && num <= levelsPlayed + 1) {
+                        scene = "play";
+                        levelInd = num - 1;
+                        fillLevel();
+                        canLaunch = false;
+                    }
+                }
+                fill(230, 192, 41);
+                stroke(153, 130, 55);
+                strokeWeight(3);
+                rect(-w/2, -h/2, w, h, 2);
+                fill(153, 130, 55, 200);
+                textFont(ARIAL_BLACK);
+                textSize(50);
+                if (num <= levelsPlayed + 1) {
+                    text(num, 0, 0);
+                    textSize(19);
+                    text("score:\n" + levels[num - 1].score, 0, 20);
+                }else {
+                    text("?", 0, 0);
+                }
+
+                popMatrix();
+                if (j + (i - 1) * 5 + (k - 1) * 10 > levels.length - 1) {
+                    break;
+                }
+                if (j > 4) {
+                    break;
+                }
+            }
+        if (j + (i - 1) * 5 + (k - 1) * 10 > levels.length - 1) {
+            break;
+        }
+        if (i > 1) {
+            break;
+        }
+        }
+        if (j + (i - 1) * 5 + (k - 1) * 10 > levels.length - 1) {
+            break;
+        }
+    }
+    
+    btn7.draw();
+    btn10.draw();
+    btn11.draw();
+}
+//} // scenes
+
+{
+var draw = function() {
+
+    for(var i in buttons) {
+        buttons[i].update();
+    }
+    if (scene !== "levelSelect") {
+        levelSelectVars.timeIn = 0;
+    }
+    switch (scene) {
+    case "home":
+        home();
+        break;
+    case "how":
+        how();
+        break;
+    case "play":
+        play();
+        // levelInd ++;
+        // fillLevel();
+        break;
+    case "transition":
+        transition();
+        break;
+    case "win":
+        win();
+        break;
+    case "levelSelect":
+        levelSelect();
+        break;
+    }
+};} // draw shumpkin
+
+{
+mouseReleased = function(){
+    if (scene === "play" && canLaunch){
+        golfBalls.launch();
+    }
+    if (!canLaunch) {
+        canLaunch = !canLaunch;
+    }
+    for(var i in buttons) {
+        buttons[i].HMC();
+    }
+    mouseDown = false;
+};
+mousePressed = function () {
+    mouseDown = true;
+};
+
+keyPressed = function () {
+    if (key.toString().toLowerCase() === "r" && scene === "play") {
+        fillLevel();
+        curRestarts ++;
+    }
+};} // you've got tuh listen to the mouse
+
+
+
+
+            }
+
+        };
+        var canvas = document.querySelector("#mycanvas"); 
+        var processingInstance = new Processing(canvas, programCode); 
+
+    </script>
+</html> 
