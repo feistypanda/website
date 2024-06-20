@@ -10,7 +10,7 @@ You should have received a copy of the GNU General Public License along with sna
 -->
 <!DOCTYPE html>
 <html> 
-  <head>
+    <head>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@800&display=swap" rel="stylesheet"> 
@@ -36,11 +36,11 @@ You should have received a copy of the GNU General Public License along with sna
     </body>
  
  
-  <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
 
-  <script>
-  var programCode = function(processingInstance) {
-    with (processingInstance) {
+    <script>
+        var programCode = function(processingInstance) {
+            with (processingInstance) {
 size(600, 600); 
 
 {
@@ -1472,25 +1472,25 @@ var settings = function(){
 {
     
 keyPressed = function(){
-    if(player.que.length <= 3){
+    if(player.que.length <= 5){
         switch(keyCode){
             case UP:
-                if(player.que[0] !== "up" && player.que[0] !== "down"){
+                if(player.que[player.que.length - 1] !== "up" && player.que[player.que.length - 1] !== "down"){
                     player.que.push("up");
                 }
                 break;
             case LEFT:
-                if(player.que[0] !== "left" && player.que[0] !== "right"){
+                if(player.que[player.que.length - 1] !== "left" && player.que[player.que.length - 1] !== "right"){
                     player.que.push("left");                        
                 }
                 break;
             case RIGHT:
-                if(player.que[0] !== "left" && player.que[0] !== "right"){
+                if(player.que[player.que.length - 1] !== "left" && player.que[player.que.length - 1] !== "right"){
                     player.que.push("right");
                 }
                 break;
             case DOWN:
-                if(player.que[0] !== "up" && player.que[0] !== "down"){
+                if(player.que[player.que.length - 1] !== "up" && player.que[player.que.length - 1] !== "down"){
                    player.que.push("down"); 
                 }
                 break;
@@ -1583,11 +1583,33 @@ var draw = function(){
 };}// draw function
 
 }};
+    function setCookie(cname, cvalue, exdays) {
+        const d = new Date();
+        d.setTime(d.getTime() + (exdays*24*60*60*1000));
+        let expires = "expires="+ d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    }
 
-  // Get the canvas that ProcessingJS will use
-  var canvas = document.getElementById("mycanvas"); 
-  // Pass the function to ProcessingJS constructor
-  var processingInstance = new Processing(canvas, programCode); 
+    function getCookie(cname) {
+        let name = cname + "=";
+        let decodedCookie = decodeURIComponent(document.cookie);
+        let ca = decodedCookie.split(';');
+        for(let i = 0; i <ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+      return "";
+    }
+
+    // Get the canvas that ProcessingJS will use
+    var canvas = document.getElementById("mycanvas"); 
+    // Pass the function to ProcessingJS constructor
+    var processingInstance = new Processing(canvas, programCode); 
 
 
   </script>
