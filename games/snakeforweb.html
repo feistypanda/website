@@ -322,7 +322,7 @@ var howto = function(){
     line(0, 160, 600, 160);
     textSize(20);
     fill(0, 200, 0);
-    text("use the arrow keys to move" + "\n" + "try not to hit the walls or yourself" + "\n" + "hit the blue ball to gain points", 180, 200);
+    text("use the arrow keys to move" + "\n" + "try not to hit the walls or yourself" + "\n" + "eat the hot dog to gain points", 180, 200);
     curSnake();
 };
 var deadSnake = function(){
@@ -375,7 +375,6 @@ var gameOver = function(s){
         btn4.h = 20;
         btn4.draw();
         deadSnake();
-        //playSound(getSound("rpg/hit-splat"));
     }else if(deadD < 30){
         background(dpr, 0, 0);
         dpr += 5;
@@ -488,6 +487,7 @@ draw = function() {
                 foodY = random(50, height - 50);
             }
             score++;
+            speed += 0.2;
             maxLength += 30;
         } 
         if(xS.length > maxLength){

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        
+        <title>ahsgdjh</title>
+    
+    </head>
+    <body>
+        
+
+        <a href="#mycanvas">
+            <p align="center"> 
+                <canvas id="mycanvas"></canvas> 
+            </p>
+        </a>
+    </body>
+ 
+ 
+    <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
+ 
+    <script>    
+var sketchProc = function(processingInstance) {
+    with (processingInstance) {
+        size(400, 400); 
+        frameRate(60);
+        textAlign(CENTER, CENTER);
+
+        
+
+        
+    } 
+};
+
+var canvas = document.getElementById("mycanvas"); 
+var processingInstance = new Processing(canvas, sketchProc);
+
+ </script>
+
+</html>

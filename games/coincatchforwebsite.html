@@ -76,7 +76,7 @@ audio.addEventListener("loadedmetadata", function(){
 });
 var audios = [audio, audio1, audio2, audio3];
 var spriteDead = false;
-var norm;
+var normalistic;
 var groundHeight = height/5;
 var keyIsPressed = false;
 var score = 0;
@@ -239,7 +239,7 @@ Sprite.prototype.draw = function(){
     point(0 - this.size/5, 0 - this.size/5);
     point(0 + this.size/5, 0 - this.size/5);
     noFill();
-    if(this.state === "norm"){
+    if(this.state === "normalistic"){
         arc(0, this.size/6, this.size/2, this.size/5, 0, PI);
     }else if (this.state === "Happy") {
         arc(0, this.size/8, this.size/2, this.size/2, 0, PI);
@@ -259,7 +259,7 @@ Sprite.prototype.update = function() {
     if(this.x > width){
         this.x = 0;
         for(var i = 0; i < enemys.length; i++){
-            enemys[i].s+=0.004;
+            enemys[i].s+=0.07;
         }
     }
 };
@@ -388,8 +388,6 @@ var buton4 = new Buton(400, 500, 80, color(255), "new", color(0), 25, 0, 0, 80, 
 
 var buton5 = new Buton(400, 20, 80, color(255), "home", color(0), 25, 0, 0, 80, color(0, 0, 0), [3], function(){homeAn = {A1: 0,A2: 0,A3: 0};page=0},"circ",0 , 0, true);
 
-//var buton12 = new Buton(400, 600, 80, color(255), "more", color(0), 25, 0, 0, 80, color(0, 0, 0), [3], function(){howText = "every time you score a point,\nyour speed increases by an\namount. and so does the enemy\nspeed. you can change that\namount in the settings",this.x = -20000, buton5.y = 600},"circ",0 , 0, true);
-
 var buton6 = new Buton(400, 640, 100, color(255), "settings", color(0), 25, 0, 0, 100, color(0, 0, 0), [0], function(){page=4},"circ",0 , 0, true);
 
 var buton7 = new Buton(400, 600, 80, color(255), "home", color(0), 25, 0, 0, 80, color(0, 0, 0), [4], function(){homeAn = {A1: 0,A2: 0,A3: 0};page=0},"rect", 80, 40, true);
@@ -508,7 +506,7 @@ var play = function(){
         if (dist(player.x, player.y, enemys[i].x, enemys[i].y) < 150) {
             player.state = "anx";
         }else{
-            norm = true;
+            normalistic = true;
         }
     }
 
@@ -526,10 +524,10 @@ var play = function(){
         die();
     }
 
-    if(norm){
-        player.state = "norm"; 
+    if(normalistic){
+        player.state = "normalistic"; 
     }
-    norm = false;
+    normalistic = false;
     if(spriteHapDel > 0){
         player.state = "Happy";
     }

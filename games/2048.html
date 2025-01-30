@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lilita+One&family=Rowdies:wght@300;400;700&family=Rubik+Mono+One&family=Signika:wght@300..700&family=Squada+One&display=swap" rel="stylesheet">
+
+
+
+        <title>2048</title> 
+        <style type="text/css">
+
+            *{
+                margin: 0px;
+                overflow: hidden;
+            }            
+            
+        </style>
+    </head>
+    <body>
+        <p align = "center">
+            <canvas id="mycanvas"></canvas> 
+        </p>
+    </body>
+ 
+    <script src="https://cdn.jsdelivr.net/processing.js/1.4.8/processing.min.js"></script> 
+
+    <script type>
+
+function main() {
+
+var programCode = function(processingInstance) {
+with (processingInstance) {
+
+var IMPACT = createFont("Squada One");
+
+var CONSTRAINING_DIMENSION, keys, __frameRate, click, scene, introPrecent, deadAmt, isdead, getColors, colors, miscFunctions, board, animations, buttons, GRID_SIZE, BOARD_SIZE, settingsAmt, createBoard, colorOptions, colorInd, targetSettingsAmt;
+
+function reset() {
+
+smooth();
+frameRate(0);
+size(window.innerWidth, window.innerHeight, P2D);
+
+textAlign(CENTER, CENTER);
+
+CONSTRAINING_DIMENSION = min(width, height);
+
+keys = {};
+__frameRate = 0;
+
+click = false;
+
+score = 0;
+
+scene = "play";
+
+introPrecent = 0;
+
+deadAmt = -2;
+
+isdead = false;
+
+settingsAmt = 0;
+
+targetSettingsAmt = 0;
+
+getColors = function(mode) {
+    switch(mode) {
+    case "vibrant":
+        return (function() {
+    var colors = [];
+
+    colorMode(HSB);
+    
+    // adapted and based on https://www.khanacademy.org/cs/i/6495204047159296
+    for (var i = 1; i <= 13; i ++) {
+        colors.push(color(map(i, 1, 13, 0, 255), (i === 3? 220:155), (i === 3? 220:255)));
+    }
+    
+    // did I say adapted? I meant merileslly stollen
+
+    colorMode(RGB);
+
+    var colors = {
+        "0": color(255),
+        "2": colors[0],
+        "4": colors[1],
+        "8": colors[2],
+        "16": colors[3],
+        "32": colors[4],
+        "64": colors[5],
+        "128": colors[6],
+        "256": colors[7],
+        "512": colors[8],
+        "1024": colors[9],
+        "2048": colors[10],
+        "4096": colors[11],
+        "8192": colors[12],
+        "board": color(210, 200, 190),
+    };
+    
+    // plagarism is bad kids
+
+    return colors;
+})();
+        // break;
+
+    default:
+        return {
+            "0": color(255),
+            "2": -14236,
+            "4": -3753902,
+            "8": -7427776,
+            "16": -11167442,
+            "32": -14841315,
+            "64": -12027352,
+            "128": -9213389,
+            "256": -6399426,
+            "512": -3585462,
+            "1024": -5287831,
+            "2048": -6924407,
+            "4096": -8561240,
+            "8192": color(255),
+            board: color(255, 223, 196),
+        };
+    }
+};
+
+colorOptions = ["vibrant", "default"];
+
+colorInd = 1;
+
+colors = getColors(colorOptions[colorInd]);
+
+// misc functions
+miscFunctions = (function() {
+    var miscFunctions = function() {};
+    
+    miscFunctions.prototype.randArrayElement = function(arr) {
+        return arr[floor(random(0, arr.length - 0.00001))];
+    };
+    
+    miscFunctions.prototype.indexInArray = function(arr, i, j) {
+        if (j !== undefined) {
+            return i >= 0 && i < arr.length && j >= 0 && j < arr[i].length;
+        } else {
+            return i >= 0 && i < arr.length;
+        }
+    };
+    
+    return new miscFunctions();
+})();
+
+
+buttons = (function() {
+    var Buttons = function() {
+        this.buttons = [];
+        this.Button = (function() {
+            function Button(config) {
+
+                // position & width
+                this.x = config.x;
+                this.y = config.y;
+                this.width = config.width;
+                this.height = config.height;
+
+                // style
+                this.color = config.color;
+                this.stroke = config.stroke || false;
+                this.strokeWeight = config.strokeWeight || false;
+                this.radius = config.radius || 0;
+
+                // text
+                this.font = config.font;
+                this.message = config.message || "no message";
+                this.textSize = config.textSize;
+                this.textSize = config.textSize || 0;
+
+                // other
+                this.onClick = config.onClick || function() {println("no on click function")};
+                this.id = config.id || "";
+            }
+
+            Button.prototype.display = function() {
+                stroke(this.stroke);
+                strokeWeight(this.strokeWeight ? this.strokeWeight : 0.0000000001);
+                fill(this.color);
+                rect(this.x, this.y, this.width, this.height, this.radius);
+                fill(0);
+                textFont(IMPACT);
+                textSize(this.textSize);
+                text(this.message, this.x + this.width/2, this.y + this.height/2);
+            };
+            
+
+            Button.prototype.mouseOver = function() {
+                return mouseX > this.x && mouseX < this.x + this.width && mouseY > this.y && mouseY < this.y + this.height;
+            };
+
+            Button.prototype.run = function() {
+                //so some stuff
+                if (click && this.mouseOver()) {
+                    this.onClick();
+                }
+
+                // display
+                this.display();
+            };
+
+            return Button;
+        })();
+    };
+
+    Buttons.prototype.run = function() {
+        for (var i = this.buttons.length - 1; i >= 0; i--) {
+            this.buttons[i].run();
+        }
+    };
+
+    Buttons.prototype.add = function(config) {
+        this.buttons.push(new this.Button(config));
+    };
+
+    Buttons.prototype.getById = function(id) {
+        for(var i in this.buttons) {
+            if (this.buttons[i].id === id) {
+                return this.buttons[i];
+            }
+        }
+    };
+
+    return new Buttons();
+})();
+
+buttons.add({
+    x: 0, y: 0,
+    width: 0, height: 0,
+    color: colors.board,
+    radius: 5,
+    id: "new game",
+    font: IMPACT,
+    textSize: 40,
+    message: "restart",
+    onClick: function() {
+        if (targetSettingsAmt === 0) {
+            board.reset();
+            animations.animations = [];
+        }
+    },
+});
+
+buttons.add({
+    x: 0, y: 0,
+    width: 0, height: 0,
+    color: colors.board,
+    radius: 5,
+    id: "settings",
+    font: IMPACT,
+    textSize: 40,
+    message: "settings",
+    onClick: function () {
+        targetSettingsAmt = 1;
+    }
+});
+
+buttons.add({
+    x: 200, y: 200,
+    width: 220, height: 60,
+    color: colors.board,
+    radius: 5,
+    id: "change color",
+    font: IMPACT,
+    textSize: 40,
+    message: "color: " + colorOptions[colorInd],
+    onClick: function () {
+        colorInd ++;
+        if (colorInd >= colorOptions.length) {
+            colorInd = 0;
+        }
+        colors = getColors(colorOptions[colorInd]);
+
+        var btn = buttons.getById("new game");
+
+        btn.color = colors.board;
+        
+        var btn = buttons.getById("settings");
+
+        btn.color = colors.board;
+
+        this.color = colors.board;
+       
+    }
+});
+buttons.add({
+    x: 0, y: 0,
+    width: 0, height: 0,
+    color: colors.board,
+    radius: 5,
+    id: "change board",
+    font: IMPACT,
+    textSize: 40,
+    message: "board size",
+    onClick: function () {
+        board = createBoard(++GRID_SIZE, BOARD_SIZE);
+        if (GRID_SIZE > 5) {
+            GRID_SIZE = 2;
+            board = createBoard(GRID_SIZE, BOARD_SIZE);
+
+        }
+        board.reset();
+    }
+});
+buttons.add({
+    x: 0, y: 0,
+    width: 0, height: 0,
+    color: colors.board,
+    radius: 5,
+    id: "exit settings",
+    font: IMPACT,
+    textSize: 40,
+    message: "exit",
+    onClick: function () {
+        targetSettingsAmt = 0;
+    }
+});
+
+// board/grid function
+var Board = (function() {
+    
+    // create an object type for the board
+    var Board = function(GRID_SIZE, BOARD_SIZE, TILE_SIZE) {
+        
+        // initialize the grid, creates a nested array with dimensions of the board size
+        this.grid = (function() {
+            
+            var arr = [];
+            
+            // horizontal segment
+            for (var i = 0; i < GRID_SIZE; i ++){
+                arr.push([]);
+            }
+            
+            i = 0;
+            
+            for (var i in arr) {
+                for (var i = 0; i < GRID_SIZE; i ++){
+                    arr[i].push(0);
+                }
+            }
+            return arr;
+        })();
+
+        this.newTiles = [];
+        
+        this.tileSize = TILE_SIZE;
+
+        this.boardScale = BOARD_SIZE;
+        this.size = CONSTRAINING_DIMENSION * BOARD_SIZE;
+        
+        this.boardX = this.size/2 + (width - CONSTRAINING_DIMENSION)/2;
+        this.boardY = this.size/1.1;
+
+        this.tileDisplayScale = 0.9;
+        this.actualTileSize = this.tileSize * this.tileDisplayScale;
+        
+        this.boardW = CONSTRAINING_DIMENSION - CONSTRAINING_DIMENSION * BOARD_SIZE;
+        this.boardH = this.boardW;
+
+        // distance petween tiles
+        // this.tileInterval = (this.boardW/(GRID_SIZE) - this.actualTileSize)/1;
+        this.tileInterval = (this.boardW - this.actualTileSize * GRID_SIZE)/(GRID_SIZE + 1)
+
+        this.canSlide = false;
+
+        {
+        
+
+        this.indicatorX = this.boardX;
+        this.indicatorW = this.boardW;
+        this.indicatorY = CONSTRAINING_DIMENSION * (this.boardScale/1.5) - CONSTRAINING_DIMENSION * (this.boardScale/1.6);
+
+        this.indicatorH = (CONSTRAINING_DIMENSION * (this.boardScale/1.2) - this.indicatorY*1.5) * (2.5/4);
+
+        this.indicatorSeperation = CONSTRAINING_DIMENSION/85.71428571428582 * 0.8;
+        // not horrendous:
+        this.indicatorButtonSeperationY = (this.boardY - (this.indicatorY + this.indicatorH) - this.indicatorH / (2.5/4) * (1.4/4))/2;
+
+        var btn = buttons.getById("new game");
+        btn.textSize = CONSTRAINING_DIMENSION/20.875;
+        btn.x = this.indicatorX;
+        btn.y = this.indicatorButtonSeperationY + this.indicatorH + this.indicatorY;
+        btn.width = this.indicatorW/2 - this.indicatorSeperation;
+        btn.height = this.indicatorH / (2.5/4) * (1.4/4);
+
+        var btn = buttons.getById("settings");
+        btn.textSize = CONSTRAINING_DIMENSION/20.875;
+        btn.x = this.indicatorX + this.indicatorW/2 + this.indicatorSeperation;
+        btn.y = this.indicatorButtonSeperationY + this.indicatorH + this.indicatorY;
+        btn.width = this.indicatorW/2 - this.indicatorSeperation;
+        btn.height = this.indicatorH / (2.5/4) * (1.4/4);
+
+        var btn = buttons.getById("change color");
+        btn.textSize = CONSTRAINING_DIMENSION/20.875;
+        btn.x = this.indicatorX - this.indicatorSeperation/2;
+        btn.y = height/2;
+        btn.width = this.indicatorW/2;
+        btn.height = this.indicatorH / (2.5/4) * (1.4/4);
+
+        var btn = buttons.getById("change board");
+        btn.textSize = CONSTRAINING_DIMENSION/20.875;
+        btn.x = this.indicatorX + this.indicatorW/2 + this.indicatorSeperation/2;
+        btn.y = height/2;
+        btn.width = this.indicatorW/2;
+        btn.height = this.indicatorH / (2.5/4) * (1.4/4);
+
+        var btn = buttons.getById("exit settings");
+        btn.textSize = CONSTRAINING_DIMENSION/20.875;
+        btn.x = (2 * this.indicatorX + this.indicatorW/2 + this.indicatorSeperation)/2;
+        btn.y = height/1.6;
+        btn.width = this.indicatorW/2 - this.indicatorSeperation;
+        btn.height = this.indicatorH / (2.5/4) * (1.4/4);
+
+        } //things at top
+    };
+
+    Board.prototype.reset = function() {
+        for (var i in this.grid) {
+            for (var j in this.grid[i]) {
+                this.grid[i][j] = 0;
+            }
+        }
+        score = 0;
+        this.newTile();
+    };
+
+    Board.prototype.calcScore = function() {
+        var score = 0;
+
+        for (var i in this.grid){
+            for (var j in this.grid[i]) {
+                var val = this.grid[i][j];
+                score += floor(val * (val/32));
+            }
+        }
+
+        return score;
+    };
+
+    Board.prototype.noAllowableMoves = function() {
+        return (!this.slideRight(true) && !this.slideLeft(true) && !this.slideUp(true) && !this.slideDown(true));
+    };
+    
+    Board.prototype.newTile = function() {
+
+        // locate all empty tiles
+
+        // will be filled with indexes of empty tiles
+        var emptyTiles = [];
+
+        for (var i in this.grid) {
+
+            for (var j in this.grid[i]) {
+
+                // is  the tile empty?
+                if (this.grid[i][j] === 0) {
+                    
+                    // add that index to the list of empty tiles
+                    emptyTiles.push([i, j]);
+                }
+                
+            }    
+        }
+
+        // chose a random one
+        var chosenTile = miscFunctions.randArrayElement(emptyTiles);
+
+        // change it to four or two
+        if (chosenTile !== undefined) {
+            this.grid[chosenTile[0]][chosenTile[1]] = random() < 0.9 ? 2 : 4;
+            animations.add({
+                position: [chosenTile[0], chosenTile[1]],
+                type: "bloop",
+                value: this.grid[chosenTile[0]][chosenTile[1]],
+            });
+        }
+
+        // check for losing
+        if (this.noAllowableMoves()) {
+            isdead = true;
+        }
+
+        // calc score
+        score = this.calcScore();
+    };
+    
+    Board.prototype.displayTile = function(i, j, white, x, y, value, _color) {
+        noStroke();
+        
+        if (x === undefined) {
+            var x = j * (this.actualTileSize + this.tileInterval) + this.boardX + this.tileInterval;
+            var y = i * (this.actualTileSize + this.tileInterval) + this.boardY + this.tileInterval;
+        }
+        
+        var w = this.actualTileSize;
+        var h = w;
+
+        if (_color === undefined) {
+            fill(this.grid[i][j] <= 4096 ? colors[this.grid[i][j]]:color(100));
+        } else {
+            fill(_color);
+        }
+
+        if (white) {
+            fill(255);
+        }
+        rect(
+            x, y, w, h, 5
+        );
+        
+        if (this.grid[i][j] > 0 && !white) {
+            textAlign(CENTER, CENTER);
+            fill(this.grid[i][j] > 4096 ? 255:0);
+            textFont(IMPACT, this.tileSize/6.097);
+            text((value === undefined? this.grid[i][j]: value), x + w/2, y + h/2);
+        }
+    };
+    
+    Board.prototype.display = function() {
+        
+        // {
+        fill(colors.board);
+        noStroke();
+        
+        rect(
+            this.boardX,
+            this.boardY,
+            this.boardW,
+            this.boardH,
+            5
+        );
+        //} background square
+        
+        //{
+        
+        for (var i in this.grid) {
+            for (var j in this.grid[i]) {
+                if (this.grid[i][j] > 0 && !animations.isTileAnimated(i, j)) {
+                    this.displayTile(i, j);
+                } else {
+                    this.displayTile(i, j, true);
+                }
+            }
+        }
+        //} tiles
+
+        //{
+
+        fill(colors.board);
+        noStroke();
+
+        rect(this.indicatorX, this.indicatorY, this.indicatorW/2 - this.indicatorSeperation, this.indicatorH, 5);
+        rect(this.indicatorX + this.indicatorW/2 + this.indicatorSeperation, this.indicatorY, this.indicatorW/2 - this.indicatorSeperation, this.indicatorH, 5);
+        fill(0);
+        textFont(IMPACT, CONSTRAINING_DIMENSION/18.5555556);
+
+        textAlign(CENTER, CENTER);
+
+        text("2048", this.indicatorX + (this.indicatorW/2 - this.indicatorSeperation)/2, this.indicatorH/2 + this.indicatorY);
+        text("SCORE: " + score, this.indicatorX + this.indicatorW/2 + this.indicatorSeperation + (this.indicatorW/2 - this.indicatorSeperation)/2, this.indicatorH/2 + this.indicatorY);  
+        //} indicators
+    };
+
+    Board.prototype.findSlideDestination = function(direc, pos) {
+
+        // if we run into an invalid spot, the spot before is the target
+        if (!miscFunctions.indexInArray(this.grid, pos[0], pos[1]) || (this.grid[pos[0]][pos[1]] !== 0)) {
+            // return the spot before the invalid spot
+            return [pos[0] - direc[0], pos[1] - direc[1]];
+        }
+
+        // if the spot is still valid, move the spot that will be checked forewards
+        pos[0] += direc[0];
+        pos[1] += direc[1];
+
+        // check the next spot
+        return this.findSlideDestination(direc, pos);
+    };
+
+    Board.prototype.slideTile = function(direc, i, j, dontActuallyMove) {
+
+
+
+        // save the value of the square to be moved
+        var g = this.grid[i][j];
+        this.grid[i][j] = 0;
+    
+
+        // find availible spot using recursive functions
+
+        var destination = this.findSlideDestination(direc, [i, j]);
+        var finalDestination = [];
+
+        if (dontActuallyMove) {
+            this.grid[i][j] = g;
+        }
+
+        // check if the tile can combine w/ the tile infront of it
+        if (
+                miscFunctions.indexInArray(this.grid, destination[0] + direc[0], destination[1] + direc[1]) && 
+                this.grid[destination[0] + direc[0]] [destination[1] + direc[1]] === g && /* set the spot that the tile is sliding to to twice the value of the tile, but only if a tile hasnt combined there yet*/
+                !this.newTiles.includes((destination[0] + direc[0]) + "" + (destination[1] + direc[1]))
+            ){
+
+            if (!dontActuallyMove) {
+                // set the spot of the combination to double its original value
+                this.grid[destination[0] + direc[0]][destination[1] + direc[1]] = g << 1;
+
+                // mark this spot as having been merged on so that newly merged tiles dont merge again
+                this.newTiles.push((destination[0] + direc[0]) + "" + (destination[1] + direc[1]));
+
+                // record the destination (used by the animation)
+                finalDestination = [destination[0] + direc[0], destination[1] + direc[1]];
+            } else {
+                return 1;
+            }
+
+            // this is so that the tile dosent dissapear during animation if another tile is merging into it
+            animations.add({
+                start: finalDestination,
+                target: finalDestination,
+                type: "slide",
+                value: g,
+            });
+
+            // this is the bloop animation
+            animations.add({
+                position: finalDestination,
+                type: "bloop",
+                value: g << 1,
+            });
+
+
+        } else {
+            if (!dontActuallyMove) {
+                // set the spot that the tile is sliding to to the value of the tile
+                this.grid[destination[0]][destination[1]] = g;
+                
+                // record the destination (used by the animation)
+                finalDestination = [destination[0], destination[1]];
+            } else if (this.grid[destination[0]][destination[1]] !== g) {
+                return 1;
+            }
+        }
+
+        // if the peice even moved
+        if (this.grid[i][j] === 0 && !dontActuallyMove) {
+            
+            // add the animation of the sliding
+            animations.add({
+                start: [i, j],
+                target: finalDestination,
+                type: "slide",
+                value: g,
+            });
+            // peice moved
+            return 1;
+        } 
+
+        // peice not moved
+
+        return 0;
+    };
+
+    Board.prototype.slideUp = function(dontActuallyMove) {
+
+        // the number of peices that were moved
+        var movedPeices = 0;
+
+        // loop through all of the tiles, from top to bottom
+        // start at i = 1 because the first row cant slide up
+        for (var i = 1; i < this.grid.length; i++) {
+            for (var j = 0; j < this.grid[i].length; j++) {
+
+                // only move if there is a peice
+                if (this.grid[i][j] > 0) {
+                    movedPeices += this.slideTile([-1, 0], i, j, dontActuallyMove);
+                }
+            }
+        }
+
+        // return false if no peices were moved so that we dont create a new tile
+        return movedPeices > 0;
+    };
+
+    Board.prototype.slideDown = function(dontActuallyMove) {
+
+        // the number of peices that were moved
+        var movedPeices = 0;
+
+        // loop through all of the tiles, from bottom to top
+        // start at i = length - 2 because the first row cant slide down
+        for (var i = this.grid.length - 2; i >= 0; i--) {
+            for (var j = 0; j < this.grid[i].length; j++) {
+
+                // only move if there is a peice
+                if (this.grid[i][j] > 0) {
+                    movedPeices += this.slideTile([1, 0], i, j, dontActuallyMove);
+                }
+            }
+        }
+
+        // return false if no peices were moved so that we dont create a new tile
+        return movedPeices > 0;
+    };
+
+    Board.prototype.slideRight = function(dontActuallyMove) {
+
+        // the number of peices that were moved
+        var movedPeices = 0;
+
+        // loop through all of the tiles, from right to left
+        // start at j = length - 2 because the first row cant slide down
+        for (var j = this.grid.length - 2; j >= 0; j--) {
+            for (var i = 0; i < this.grid[j].length; i++) {
+
+                // only move if there is a peice
+                if (this.grid[i][j] > 0) {
+                    movedPeices += this.slideTile([0, 1], i, j, dontActuallyMove);
+                }
+            }
+        }
+
+        // return false if no peices were moved so that we dont create a new tile
+        return movedPeices > 0;
+    };
+
+    Board.prototype.slideLeft = function(dontActuallyMove) {
+
+        // the number of peices that were moved
+        var movedPeices = 0;
+
+        // loop through all of the tiles, from left to right
+        // start at j = 1 because the first row cant slide down
+        for (var j = 1; j < this.grid.length; j++) {
+            for (var i = 0; i < this.grid[j].length; i++) {
+
+                // only move if there is a peice
+                if (this.grid[i][j] > 0) {
+                    movedPeices += this.slideTile([0, -1], i, j, dontActuallyMove);
+                }
+            }
+        }
+
+        // return false if no peices were moved so that we dont create a new tile
+        return movedPeices > 0;
+    };
+
+    Board.prototype.handleKeys = function() {
+        if (keys[UP]) {
+            if (this.canSlide) {
+                this.canSlide = false;
+                if (this.slideUp()) {
+                    this.newTile();
+                }
+            }
+        } else if (keys[LEFT]) {
+            if (this.canSlide) {
+                this.canSlide = false;
+                if (this.slideLeft()) {
+                    this.newTile();
+                }
+            }
+        } else if (keys[RIGHT]) {
+            if (this.canSlide) {
+                this.canSlide = false;
+                if (this.slideRight()) {
+                    this.newTile();
+                }
+            }
+        } else if (keys[DOWN]) {
+            if (this.canSlide) {
+                this.canSlide = false;
+                if (this.slideDown()) {
+                    this.newTile();
+                }
+            }
+        } else {
+            this.canSlide = true;
+        }
+    };
+
+    Board.prototype.update = function() {
+        this.newTiles = [];
+        if (targetSettingsAmt === 0) {
+            this.handleKeys();
+        }
+    };
+
+    Board.prototype.run = function() {
+        this.update();
+        this.display();
+    };
+    
+    // return an instance of the board object type
+    return Board;
+})();
+
+// animations of peices moving
+//  list of starts and targets
+//  some sort of non-linear interpolation
+//  if a square is marked as a target here, it wont be drawn on the main board
+//  also draws ¿bulging? new squares
+
+animations = (function() {
+    var Animations = function() {
+
+        this.speed = __frameRate/480;
+        this.animations = [];
+        this.Animation = (function() {
+            var Animation = function(config) {
+
+                this.type = config.type;
+
+                this.speed = 1/10 * 60/__frameRate;;
+
+                if (this.type === "bloop") {
+                    this.speed *= 0.5;
+                }
+
+                // goes from 0 to 1, used to determine how far along the animation is
+                this.time = 0;
+
+                this.value = config.value;
+
+                // make different variables for different animations
+                if (config.target !== undefined) {
+                    this.target = config.target;
+                    this.start = config.start;
+                } else {
+                    this.position = config.position;
+                }
+
+
+
+                // when true, the animation is removed
+                this.done = false;
+            };
+
+            Animation.prototype.slide = function(t) {
+                return t;
+            };
+
+            Animation.prototype.bloop = function(t) {
+                return 1 - abs(cos(t * PI));
+            };
+
+            Animation.prototype.display = function() {
+
+                var i, j;
+
+                if (this.target === undefined) {
+                    i = this.position[0], j = this.position[1];
+                } else {
+                    i = this.target[0], j = this.target[1];
+                }
+                
+                
+
+                if (board.grid[i][j] > 0) {
+                switch(this.type) {
+                case "slide":
+
+                    // calculate where to show the tile
+                    var i = this.target[0], j = this.target[1];
+
+                    var strtI = this.start[0], strtJ = this.start[1];
+
+                    // basically the j position (0 - 3) times the tile size, plus the offset so that board is displayed inbetween the tiles
+                    var tarX = j * (board.actualTileSize + board.tileInterval) + board.boardX + board.tileInterval;
+                        tarY = i * (board.actualTileSize + board.tileInterval) + board.boardY + board.tileInterval;
+
+                    var strtX = strtJ * (board.actualTileSize + board.tileInterval) + board.boardX + board.tileInterval,
+                        strtY = strtI * (board.actualTileSize + board.tileInterval) + board.boardY + board.tileInterval;
+
+                    var amt = this.slide(this.time);
+
+                    var x = lerp(strtX, tarX, amt);
+                    var y = lerp(strtY, tarY, amt);
+
+                    // lerp between color of sliding tile and merging tile. if the tile is not merging, it will lerp between the same two colors making the color not change at all.
+                    var c1 = board.grid[i][j] <= 4096 ? colors[board.grid[i][j]]:color(100);
+                    var c2 = this.value <= 4096 ? colors[this.value]:color(100);
+
+                    // messed up the order but am too lazy to fix it up there ^^^
+                    var c3 = lerpColor(c2, c1, amt);
+
+                    pushMatrix();
+
+                    translate(  
+                            x,
+                            y
+                        );
+                    board.displayTile(i, j, false, 0, 0, this.value, c3);
+                    popMatrix();
+                    break;
+
+                case "bloop":
+
+                    if (this.time >= 0.5) {
+                        var amt = this.bloop(this.time * 2 - 1);
+
+                        var i = this.position[0];
+                        var j = this.position[1];
+
+                        var x = j * (board.actualTileSize + board.tileInterval) + board.boardX + board.tileInterval,
+                            y = i * (board.actualTileSize + board.tileInterval) + board.boardY + board.tileInterval;
+
+                        pushMatrix();
+                        translate(x + board.actualTileSize/2, y + board.actualTileSize/2);
+                        scale(1 + amt/8);
+
+                        board.displayTile(i, j, false, -board.actualTileSize/2, -board.actualTileSize/2, this.value);
+
+                        popMatrix();
+                    }
+                    
+                    break;
+                }
+            }
+            };
+
+            Animation.prototype.update = function() {
+                
+                this.time += this.speed;
+                this.time = min(this.time, 1);
+                if (this.time >= 1) {
+                    this.done = true;
+                }
+            };
+
+            Animation.prototype.run = function() {
+                this.update();
+                this.display();
+            };
+
+            return Animation;
+        })();
+    };
+
+    Animations.prototype.run = function() {
+        
+        // loop through all of the animations, remove it if it is done
+        for (var i = this.animations.length - 1; i >= 0; i--) {
+            this.animations[i].run();
+            if (this.animations[i].done) {
+                this.animations.splice(i, 1);
+            }
+        }
+    };
+
+    Animations.prototype.isTileAnimated = function(k, j) {
+
+        var yes = false;
+
+        // loop through all of the animations, and see if any of them are at the i, j square
+        for (var i in this.animations) {
+            if (this.animations[i].type === "slide") {
+                if (+this.animations[i].target[0] === +k && +this.animations[i].target[1] === +j) {
+                    yes = true;
+                }
+            } else {
+                if (+this.animations[i].position[0] === +k && +this.animations[i].position[1] === +j) {
+                    yes = true;
+                }
+            }
+        }
+        return yes;
+    };
+
+    // if there are no slide animations return true
+    Animations.prototype.none = function() {
+        for (var i in this.animations) {
+            if (this.animations[i].type === "slide") {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    Animations.prototype.add = function(config) {
+        this.animations.push(new this.Animation(config));
+    };
+
+    return new Animations();
+})();
+
+createBoard = function(GRID_SIZE, BOARD_SIZE) {
+    animations.animations = [];
+    return new Board(GRID_SIZE, BOARD_SIZE, CONSTRAINING_DIMENSION * (1 - BOARD_SIZE) / GRID_SIZE);
+}
+
+// number of squares in grid
+GRID_SIZE = 4;
+
+BOARD_SIZE = 0.3;
+
+board = createBoard(GRID_SIZE, BOARD_SIZE);
+
+board.newTile();
+}
+
+reset();
+
+
+{
+
+// test:
+// board.grid[0][0] = 2;
+// board.grid[0][1] = 2;
+// board.grid[0][2] = 4;
+// board.grid[0][3] = 4;
+// use left arrow
+// expected output: 4, 8
+
+// test:
+// board.grid[0][0] = 2;
+// board.grid[0][1] = 2;
+// board.grid[0][2] = 2;
+// board.grid[0][3] = 2;
+// use left arrow
+// expected output: 4, 2
+
+// color test
+
+// board.grid[0][0] = 4;
+// board.grid[0][1] = 4;
+// board.grid[0][2] = 8;
+// board.grid[0][3] = 16;
+
+// board.grid[1][0] = 256;
+// board.grid[1][1] = 128;
+// board.grid[1][2] = 64;
+// board.grid[1][3] = 32;
+
+// board.grid[2][0] = 512;
+// board.grid[2][1] = 1024;
+// board.grid[2][2] = 2048;
+// board.grid[2][3] = 4096;
+
+// board.grid[3][3] = 8192;
+// board.grid[3][2] = 8192<<1;
+// board.grid[3][1] = 8192<<2;
+// board.grid[3][0] = 8192<<3;
+}// tests
+
+function play() {
+
+    if(isdead) {
+        deadAmt += 0.02;
+        if(deadAmt > 0) {
+            scene = 'dead';
+        }
+    }
+
+    buttons.getById("")
+
+    background(255);
+
+    board.run(); 
+    animations.run();
+
+    fill(0, settingsAmt * 150);
+    rect(0, height/2.5, width, height);
+
+    buttons.run();
+
+    fill(0, settingsAmt * 150);
+    rect(0, 0, width, height/2.5);
+
+    settingsAmt = lerp(settingsAmt, targetSettingsAmt, 0.05);
+
+    var btn = buttons.getById("change color");
+    
+    btn.y = lerp(height * 1.1, height/2, settingsAmt);
+    btn.message = "color: " + colorOptions[colorInd];
+
+    var btn = buttons.getById("change board");
+
+    btn.y = lerp(height * 1.1, height/2, settingsAmt);
+    btn.color = colors.board;
+
+    var btn = buttons.getById("exit settings");
+
+    btn.y = lerp(height * 1.1, height/1.6, settingsAmt);
+    btn.color = colors.board;
+}
+
+function dead() {
+    deadAmt = min(deadAmt + 0.002, 1);
+    fill(red(-14236), green(-14236), blue(-14236), 255 * deadAmt);
+    noStroke()
+    rect(0, 0, width, height);
+    fill(255, 255 * deadAmt);
+    textFont(IMPACT, CONSTRAINING_DIMENSION/9.2777);
+    text("YOU DIED D=\nYOUR SCORE WAS " + score, width/2, height/2.2);
+    textFont(IMPACT, CONSTRAINING_DIMENSION/18.554);
+    text("--click to play again--", width/2, height/1.6);
+    if (click) {
+        reset();
+
+    }
+}
+
+function intro() {
+
+}
+
+var scenes = {
+    play: play,
+    intro: intro,
+    dead: dead,
+};
+
+draw = function() {
+    __frameRate = this.__frameRate;
+
+    scenes[scene]();    
+
+    if (introPrecent <= 1) {
+        scenes.intro();
+    }
+
+    click = false;
+};
+
+mousePressed = function() {
+    click = true;
+};
+
+keyPressed = function() {
+
+    keys[keyCode] = keys[key.toString()] = true;
+
+};
+
+keyReleased = function() {
+
+    keys[keyCode] = keys[key.toString()] = false;
+
+};
+
+};
+
+};
+var canvas = document.querySelector("#mycanvas"); 
+var processingInstance = new Processing(canvas, programCode);}
+
+main();
+    </script>
+    <script></script>
+</html> 
